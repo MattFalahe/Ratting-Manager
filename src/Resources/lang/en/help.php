@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'title' => 'Help & Documentation',
+    'navigation' => 'Navigation',
+    'search_placeholder' => 'Search documentation...',
+    'overview' => 'Overview',
+    'getting_started' => 'Getting Started',
+    'my_ratting' => 'My Ratting',
+    'corporation' => 'Corporation Tab',
+    'monthly_report' => 'Monthly Report',
+    'leaderboard' => 'Leaderboard',
+    'ratter_lookup' => 'Ratter Lookup',
+    'figures' => 'How the Figures Work',
+    'wallet_tokens' => 'When a Token Is Lost',
+    'notifications' => 'Notifications',
+    'settings' => 'Settings',
+    'commands' => 'CLI Commands',
+    'data_esi' => 'Data and ESI',
+    'permissions' => 'Permissions',
+    'custom_styling' => 'Custom Styling',
+    'faq' => 'FAQ',
+    'troubleshooting' => 'Troubleshooting',
+    'admin_diagnostics' => 'Admin Diagnostics',
+];
