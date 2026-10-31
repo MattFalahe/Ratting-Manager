@@ -101,10 +101,10 @@ class ListController extends Controller
 
         return $this->page($request, $list, $scope, [
             'heading' => trans('ratting-manager::dashboard.corporation_ratting'),
-            'back' => route('ratting-manager.dashboard', array_filter(['period' => $request->query('period')])) . '#rm-corporation',
+            'back' => route('ratting-manager.dashboard', array_filter(['period' => $request->query('period'), 'corporation' => $request->query('corporation')])) . '#rm-corporation',
             'backLabel' => trans('ratting-manager::lists.back_corporation'),
             'corporations' => $this->corporationNames(),
-            'pickedCorporation' => count($corporations) === 1 && $request->query('corporation') ? $corporations[0] : null,
+            'pickedCorporation' => count($corporations) === 1 ? $corporations[0] : null,
             'corporation' => true,
             'rows' => $rows,
         ]);

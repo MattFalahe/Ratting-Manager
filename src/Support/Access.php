@@ -18,6 +18,9 @@ final class Access
 {
     public const TIERS = ['view', 'member', 'director', 'admin'];
 
+    /** What the corporation picker sends for every corporation on offer. Nothing sent means the viewer's own. */
+    public const ALL_CORPORATIONS = 'all';
+
     public static function atLeast(string $tier, $user = null): bool
     {
         $user = $user ?? auth()->user();

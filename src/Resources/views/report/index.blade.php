@@ -23,9 +23,9 @@
                     <form method="GET" action="{{ url()->current() }}" class="rm-filters">
                         @if(count($corporations) > 1)
                             <select name="corporation" class="form-control form-control-sm" aria-label="{{ trans('ratting-manager::common.corporation') }}">
-                                <option value="">{{ trans('ratting-manager::common.all_corporations') }}</option>
+                                <option value="{{ \RattingManager\Support\Access::ALL_CORPORATIONS }}" @if($pickedCorporation === null) selected @endif>{{ trans('ratting-manager::common.all_corporations') }}</option>
                                 @foreach($corporations as $id => $name)
-                                    <option value="{{ $id }}" @if($pickedCorporation === $id && request('corporation')) selected @endif>{{ $name }}</option>
+                                    <option value="{{ $id }}" @if($pickedCorporation === $id) selected @endif>{{ $name }}</option>
                                 @endforeach
                             </select>
                         @endif

@@ -44,7 +44,7 @@
                                             @include('ratting-manager::partials.period-picker', [
                                                 'formId' => 'rm-corp-filters',
                                                 'corporations' => $corporations,
-                                                'pickedCorporation' => null,
+                                                'pickedCorporation' => $pickedCorporation,
                                                 'characterOptions' => [],
                                             ])
                                         </div>

@@ -25,18 +25,6 @@ trait ResolvesViewer
     }
 
     /**
-     * The configured corporations the viewer's characters are in now. A
-     * member's leaderboard is their own corporation's; when none of their
-     * characters is in one, the whole configured list stands in.
-     *
-     * @return int[]
-     */
-    protected function viewerCorporations(Players $players, Settings $settings): array
-    {
-        return $this->corporationsOf($this->viewerCharacters($players), $settings);
-    }
-
-    /**
      * The configured corporations these characters are in now, or every
      * configured corporation when they are in none.
      *
@@ -59,21 +47,101 @@ trait ResolvesViewer
     }
 
     /**
-     * Names of the corporations this viewer may read, for the corporation picker.
+     * Names for the corporation picker: the corporations this viewer may
+     * read, or the ones given.
      *
+     * @param int[]|null $corporations
      * @return array<int, string>
      */
-    protected function corporationNames(): array
+    protected function corporationNames(?array $corporations = null): array
     {
-        $readable = Access::directorCorporations();
-        $names = DB::table('corporation_infos')->whereIn('corporation_id', $readable ?: [0])->pluck('name', 'corporation_id')->all();
+        $ids = $corporations ?? Access::directorCorporations();
+        $names = DB::table('corporation_infos')->whereIn('corporation_id', $ids ?: [0])->pluck('name', 'corporation_id')->all();
 
         $list = [];
-        foreach ($readable as $id) {
+        foreach ($ids as $id) {
             $list[$id] = $names[$id] ?? ('Corporation ' . $id);
         }
 
         return $list;
+    }
+
+    /**
+     * A player's home among these corporations: the one their main is in
+     * now, or else the first of them any of their characters is in. Null
+     * when they are in none of them.
+     *
+     * @param int[] $characters
+     * @param int[] $corporations
+     */
+    protected function homeCorporation(array $characters, int $main, array $corporations): ?int
+    {
+        if ($corporations === []) {
+            return null;
+        }
+
+        $now = DB::table('character_affiliations')
+            ->whereIn('character_id', array_values(array_unique(array_merge($characters, [$main]))))
+            ->pluck('corporation_id', 'character_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if (isset($now[$main]) && in_array($now[$main], $corporations, true)) {
+            return $now[$main];
+        }
+
+        foreach ($corporations as $id) {
+            if (in_array($id, $now, true)) {
+                return $id;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * One corporation out of these, or all of them: the one the picker sent,
+     * all of them for All, and otherwise the viewer's own, their main's
+     * corporation first. A viewer in none of them starts on all of them.
+     *
+     * @param int[] $choices
+     * @return int[]
+     */
+    protected function pickFrom(array $choices, $request, Players $players): array
+    {
+        if (count($choices) < 2) {
+            return $choices;
+        }
+
+        $picked = (string) $request->query('corporation', '');
+        if ($picked === Access::ALL_CORPORATIONS) {
+            return $choices;
+        }
+        if (in_array((int) $picked, $choices, true)) {
+            return [(int) $picked];
+        }
+
+        $own = $this->homeCorporation($this->viewerCharacters($players), $this->viewerMain($players), $choices);
+
+        return $own !== null ? [$own] : $choices;
+    }
+
+    /**
+     * The corporations a member's own board covers, and the ones they can
+     * pick between: the tracked corporations their characters are in now,
+     * their main's picked first. In none of them, every tracked corporation
+     * stands in and there is nothing to pick.
+     *
+     * @return array{0: int[], 1: int[]} the board's corporations, then the choices
+     */
+    protected function memberCorporations($request, Players $players, Settings $settings): array
+    {
+        $own = Access::trackedCorporationsOf();
+        if ($own === []) {
+            return [$settings->configuredCorporations(), []];
+        }
+
+        return [$this->pickFrom($own, $request, $players), $own];
     }
 
     /**
@@ -94,13 +162,10 @@ trait ResolvesViewer
         return $readable;
     }
 
-    /** @return int[] the corporations a director asked for: one they may read, or all of them */
+    /** @return int[] the corporations a director's page shows: their own by default, or the one or all they picked */
     protected function pickedCorporations($request, Settings $settings): array
     {
-        $readable = $this->readableCorporations($settings);
-        $picked = (int) $request->query('corporation', 0);
-
-        return in_array($picked, $readable, true) ? [$picked] : $readable;
+        return $this->pickFrom($this->readableCorporations($settings), $request, app(Players::class));
     }
 
     /**

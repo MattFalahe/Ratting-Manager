@@ -794,7 +794,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                         <li><strong>Corporation tax paid</strong> is the corporation's cut of your bounties and ESS payouts, from the corporation journal, with the share of the payout it took. The income chart shows it month by month, and Month by character shows it per character.</li>
                         <li><strong>ISK per hour</strong> is that income over the time you spent ratting. Alts ratting together count their time once, so three characters for an hour is one hour.</li>
                         <li><strong>Rats killed</strong> counts each tick's kill list once. In a fleet that shares bounties, every member's tick lists the fleet's rats, so a shared payout counts them once and not once per member.</li>
-                        <li><strong>Rank by hours</strong> is your place in your corporation by hours ratted.</li>
+                        <li><strong>Rank by hours</strong> is your place in your corporation by hours ratted: your main character's corporation, when your characters are in more than one tracked corporation.</li>
                         <li><strong>When I rat</strong> shades each hour of the week, in EVE time, by how often you ratted in it. Hover a square for the count.</li>
                         <li><strong>Sessions</strong> are runs of ticks with no gap longer than {{ $sessionGap }} minutes. A session's ISK per hour counts bounties only, because ESS pays out later and is not tied to one session.</li>
                     </ul>
@@ -816,7 +816,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
             <div id="corporation" class="help-section">
                 <div class="help-card">
                     <h3><i class="fas fa-building"></i> The Corporation Tab</h3>
-                    <p>Directors get a second tab on the Dashboard, for the tracked corporations their characters are in now. Admins get every tracked corporation. It loads when it is first opened, and has its own corporation and period pickers. It is split into sections for an overview, players, when, where, kills and month by month, and the section open stays open when the period changes.</p>
+                    <p>Directors get a second tab on the Dashboard, for the tracked corporations their characters are in now. Admins get every tracked corporation. It loads when it is first opened, and has its own corporation and period pickers. With more than one corporation to choose from, it opens on the one your main character is in, and <strong>All corporations</strong> shows them together; with one, there is no corporation picker. It is split into sections for an overview, players, when, where, kills and month by month, and the section open stays open when the period changes.</p>
                     <ul>
                         <li><strong>ISK ratted</strong>: what the rats paid before tax. See How the Figures Work.</li>
                         <li><strong>Ratted in</strong>: how many systems, constellations and regions the period covers.</li>
@@ -860,6 +860,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                     <h3><i class="fas fa-trophy"></i> Leaderboard</h3>
                     <p>Members see their corporation ranked by hours ratted, with active days, and their own row picked out. Nobody's ISK is shown to members, their own included; they find their own on My Ratting.</p>
                     <p>Directors see the full board: ISK ratted, income, hours, ISK per hour, the median comparison, rats, active days, change and coverage, for the tracked corporations their characters are in now. Admins see it for any tracked corporation or all of them.</p>
+                    <p>Everyone starts on their own corporation: the one their main character is in. Anyone with more than one corporation to choose from, members whose characters are in two tracked corporations included, gets a corporation picker; with one, there is none.</p>
                     <h4>Players who have left</h4>
                     <p>
                         Ratting counts for the corporation a character was in at the time, so a player who leaves stays on the board for the periods they ratted.

@@ -56,7 +56,7 @@ class LeaderboardController extends Controller
             ]);
         }
 
-        $corporations = $this->viewerCorporations($players, $settings);
+        [$corporations, $choices] = $this->memberCorporations($request, $players, $settings);
         $board = $metrics->hoursBoard(new Scope($corporations), $period, $main);
 
         // The top of the board, and the member's own row when it is further down.
@@ -74,6 +74,8 @@ class LeaderboardController extends Controller
             'ownMain' => $main,
             'ownRank' => $board['own_rank'],
             'playerCount' => $board['players'],
+            'corporations' => $choices === [] ? [] : $this->corporationNames($choices),
+            'pickedCorporation' => count($corporations) === 1 ? $corporations[0] : null,
         ]);
     }
 

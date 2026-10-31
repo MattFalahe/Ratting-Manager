@@ -23,7 +23,7 @@
             </div>
             <div class="card-footer text-muted small d-flex flex-wrap justify-content-between align-items-center" style="gap: 8px">
                 <span>{{ trans('ratting-manager::dashboard.median_isk_per_hour') }}: @rmisk($median) ({{ trans('ratting-manager::dashboard.median_hint') }})</span>
-                <a class="btn btn-sm btn-rm-secondary" href="{{ route('ratting-manager.leaderboard.csv', array_filter(['period' => $period->key, 'corporation' => $pickedCorporation])) }}">
+                <a class="btn btn-sm btn-rm-secondary" href="{{ route('ratting-manager.leaderboard.csv', array_filter(['period' => $period->key, 'corporation' => $pickedCorporation ?? (count($corporations) > 1 ? \RattingManager\Support\Access::ALL_CORPORATIONS : null)])) }}">
                     <i class="fas fa-file-csv"></i> {{ trans('ratting-manager::leaderboard.download_csv') }}
                 </a>
             </div>
@@ -33,7 +33,7 @@
             <div class="card-header">
                 <h3 class="card-title"><i class="fas fa-trophy"></i> {{ trans('ratting-manager::leaderboard.hours_board') }} - {{ $period->label() }}</h3>
                 <div class="card-tools">
-                    @include('ratting-manager::partials.period-picker')
+                    @include('ratting-manager::partials.period-picker', ['corporations' => $corporations, 'pickedCorporation' => $pickedCorporation])
                 </div>
             </div>
             <div class="card-body p-0">

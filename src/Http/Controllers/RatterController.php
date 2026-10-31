@@ -46,10 +46,12 @@ class RatterController extends Controller
 
         $personal = $dashboard->personal(new Scope($corporations, $characters), $period, $request->query('month'));
 
-        // The player's place by hours, on the board they see on My Ratting,
-        // as long as that is a board this viewer may read.
-        $boardCorporations = array_values(array_intersect($this->corporationsOf($characters, $settings), $corporations)) ?: $corporations;
-        $board = $metrics->hoursBoard(new Scope($boardCorporations), $period, $main);
+        // The player's place by hours, on the board they see on My Ratting (their
+        // main's corporation when they are in more than one), as long as that
+        // is a board this viewer may read.
+        $theirs = array_values(array_intersect($this->corporationsOf($characters, $settings), $corporations)) ?: $corporations;
+        $home = count($theirs) > 1 ? $this->homeCorporation($characters, $main, $theirs) : null;
+        $board = $metrics->hoursBoard(new Scope($home !== null ? [$home] : $theirs), $period, $main);
 
         $kinds = Ticks::kindsOf($characters, now()->subDays(90), $corporations);
         $lost = $gaps->forCharacters($characters);

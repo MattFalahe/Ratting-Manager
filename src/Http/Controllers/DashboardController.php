@@ -72,11 +72,12 @@ class DashboardController extends Controller
 
         $personal = $this->personal(new Scope($configured, $scopeCharacters), $period, $request->query('month'));
 
-        $board = $this->metrics->hoursBoard(
-            new Scope($this->viewerCorporations($this->players, $this->settings)),
-            $period,
-            $this->viewerMain($this->players)
-        );
+        [$boardCorporations] = $this->memberCorporations($request, $this->players, $this->settings);
+        $board = $this->metrics->hoursBoard(new Scope($boardCorporations), $period, $this->viewerMain($this->players));
+
+        // The Corporation tab loads with what its picker holds, so the picker
+        // starts on the director's own corporation.
+        $corporationTab = $seesCorporations ? $this->pickedCorporations($request, $this->settings) : [];
 
         $this->players->load($characters);
 
@@ -90,6 +91,7 @@ class DashboardController extends Controller
             'characterOptions' => collect($characters)->mapWithKeys(fn ($id) => [$id => $this->players->name($id)])->sort()->all(),
             'pickedCharacter' => in_array($picked, $characters, true) ? $picked : null,
             'corporations' => $seesCorporations ? $this->corporationNames() : [],
+            'pickedCorporation' => count($corporationTab) === 1 ? $corporationTab[0] : null,
             'listUrl' => fn (string $list) => route('ratting-manager.lists.personal', array_filter([
                 'list' => $list,
                 'period' => $period->key,
