@@ -80,6 +80,17 @@ return [
     'earned_and_taxed_note' => 'What the players received, beside the corporation\'s cut of the same ratting.',
     'all_months' => 'All :count months',
 
+    // The month-by-month figures as lines, one chart per unit
+    'trend_people' => 'Players and characters, by month',
+    'trend_people_note' => 'How many players ratted each month, with their alts counted once, and how many characters. The month still running is dashed.',
+    'trend_hours' => 'Hours ratted, by month',
+    'trend_hours_note' => 'Time spent ratting by all the players, with alts ratting together counted once. The month still running is dashed.',
+    'trend_rate' => 'ISK per hour, by month',
+    'trend_rate_note' => 'What the players earned over the time they spent ratting. The month still running is dashed.',
+    'trend_per_player' => 'Income per player, by month',
+    'trend_per_player_note' => 'What the players earned, divided by how many of them ratted. The month still running is dashed.',
+    'so_far' => 'so far',
+
     // Chart series and tooltips
     'chart_hours' => 'Hours ratted',
     'chart_bounty' => 'Bounties',

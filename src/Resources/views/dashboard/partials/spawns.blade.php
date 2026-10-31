@@ -19,7 +19,8 @@
             </thead>
             <tbody>
                 @forelse($spawns as $spawn)
-                    <tr>
+                    <tr data-filter-npc="{{ $spawn['npc'] }}" data-filter-faction="{{ $spawn['faction'] }}" data-filter-rank="{{ $spawn['rank'] }}" data-filter-size="{{ $spawn['size'] }}"
+                        data-filter-player="{{ $spawn['player'] ?? '' }}" data-filter-character="{{ $spawn['character'] }}" data-filter-system="{{ $spawn['system'] }}">
                         <td data-order="{{ $spawn['when'] }}">
                             <span class="eve-time" data-eve-time="{{ str_replace(' ', 'T', $spawn['when']) }}Z">{{ substr($spawn['when'], 0, 16) }}</span><br>
                             <small class="text-muted">{{ $spawn['system'] }}</small>

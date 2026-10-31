@@ -50,6 +50,10 @@
     height: 360px;
 }
 
+.ratting-manager-dashboard .rm-chart-double {
+    height: 600px;
+}
+
 .ratting-manager-dashboard .rm-filters {
     display: flex;
     flex-wrap: wrap;

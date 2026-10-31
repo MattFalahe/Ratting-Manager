@@ -798,7 +798,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                         <li><strong>When I rat</strong> shades each hour of the week, in EVE time, by how often you ratted in it. Hover a square for the count.</li>
                         <li><strong>Sessions</strong> are runs of ticks with no gap longer than {{ $sessionGap }} minutes. A session's ISK per hour counts bounties only, because ESS pays out later and is not tied to one session.</li>
                     </ul>
-                    <p>Long lists, such as sessions, systems and special spawns, show their first 10 rows. <strong>View all</strong> opens the whole list on its own page, where it can be searched and sorted.</p>
+                    <p>Long lists, such as sessions, systems and special spawns, show their first 10 rows. <strong>View all</strong> opens the whole list on its own page, where it can be searched and sorted, and narrowed with dropdowns: special spawns by NPC, faction, rank, size, character and system, sessions by character and system. A dropdown only shows when the list has more than one value for it.</p>
                     <h4>Insights</h4>
                     <ul>
                         <li><strong>Favourite system</strong> is where you spent the most time; <strong>best-paying system</strong> is where your ISK per hour was highest, among systems with at least an hour of ratting.</li>
@@ -827,9 +827,9 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                         <li><strong>Untracked ratters</strong>: characters the corporation journal pays bounties to who have no wallet token on SeAT.</li>
                         <li><strong>Wallet tokens lost</strong>: characters who had a token and lost it, with the last day it can come back and lose nothing. Shown only when there are any. See When a Token Is Lost.</li>
                         <li><strong>Gone quiet</strong>: regular ratters who have stopped.</li>
-                        <li>Each long list shows its first 10 rows; <strong>View all</strong> opens the whole of it, searchable and sortable, for the same corporation and period. The leaderboard's View all opens the Leaderboard page.</li>
+                        <li>Each long list shows its first 10 rows; <strong>View all</strong> opens the whole of it, searchable and sortable, for the same corporation and period. The leaderboard's View all opens the Leaderboard page. Special spawns can be narrowed by NPC, faction, rank, size, player, character and system, and untracked ratters by corporation and whether they are on SeAT.</li>
                         <li><strong>Insights</strong>: the same as on My Ratting for the whole corporation, plus the most players ratting in one hour, players per active day and income per player. The Systems table adds how many players ratted in each system and who ratted there most.</li>
-                        <li><strong>Month by month</strong>: for the last 12 months, what the players earned, what landed in the corporation's wallet and the tax rate that makes, players, characters, hours, ISK per hour and income per player.</li>
+                        <li><strong>Month by month</strong>: for the last 12 months, what the players earned, what landed in the corporation's wallet and the tax rate that makes, players, characters, hours, ISK per hour and income per player. Below the table, a chart of earned against taxed, and line charts of players and characters, hours, ISK per hour and income per player, each on its own scale. The month still running is dashed, since it is not over.</li>
                     </ul>
                     <h4>Coverage</h4>
                     <p>

@@ -39,6 +39,22 @@
                 </div>
             @endif
         </div>
+        @if($columnFilters !== [])
+            {{-- Wired to the table below the page; each row carries the matching data-filter-{key}. --}}
+            <div class="card-body rm-filters rm-list-filters">
+                @foreach($columnFilters as $key => $filter)
+                    <select class="form-control form-control-sm" data-filter="{{ $key }}" aria-label="{{ $filter['label'] }}" title="{{ $filter['label'] }}">
+                        <option value="">{{ $filter['any'] }}</option>
+                        @foreach($filter['options'] as $value => $text)
+                            <option value="{{ $value }}">{{ $text }}</option>
+                        @endforeach
+                    </select>
+                @endforeach
+                <button type="button" class="btn btn-sm btn-rm-secondary rm-clear-filters" hidden>
+                    <i class="fas fa-times"></i> {{ trans('ratting-manager::lists.clear_filters') }}
+                </button>
+            </div>
+        @endif
     </div>
 
     @switch($list)
@@ -75,7 +91,36 @@ $(function () {
     // cannot take, so it is left as it is.
     var $table = $('#rm-list-table');
     if ($.fn.DataTable && $table.length && !$table.find('tbody td[colspan]').length) {
-        $table.DataTable({ order: [], pageLength: 25, lengthMenu: [25, 50, 100, 250] });
+        var table = $table.DataTable({ order: [], pageLength: 25, lengthMenu: [25, 50, 100, 250] });
+
+        // The dropdowns keep a row when its data-filter-{key} matches every
+        // one picked, on top of the search box.
+        var $filters = $('.rm-list-filters select[data-filter]');
+        var $clear = $('.rm-list-filters .rm-clear-filters');
+        if ($filters.length) {
+            $.fn.dataTable.ext.search.push(function (settings, data, index) {
+                if (settings.nTable !== $table[0]) {
+                    return true;
+                }
+                var row = settings.aoData[index].nTr;
+                var keep = true;
+                $filters.each(function () {
+                    if (this.value !== '' && row.getAttribute('data-filter-' + this.getAttribute('data-filter')) !== this.value) {
+                        keep = false;
+                    }
+                });
+                return keep;
+            });
+            $filters.on('change', function () {
+                $clear.prop('hidden', !$filters.filter(function () { return this.value !== ''; }).length);
+                table.draw();
+            });
+            $clear.on('click', function () {
+                $filters.val('');
+                $clear.prop('hidden', true);
+                table.draw();
+            });
+        }
     }
 });
 </script>

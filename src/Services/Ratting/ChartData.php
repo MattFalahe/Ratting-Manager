@@ -289,6 +289,7 @@ class ChartData
         return $rows->map(fn ($r) => [
             'when' => $r->ticked_at,
             'character' => $this->players->name((int) $r->character_id),
+            'player' => $this->players->name($this->players->mainOf((int) $r->character_id)),
             'system' => $details[(int) $r->solar_system_id]['name'] ?? '-',
             'npc' => $r->name ?? ('Type ' . $r->type_id),
             'type_id' => (int) $r->type_id,

@@ -460,6 +460,80 @@
             });
         },
 
+        /**
+         * The months as lines, one chart per unit, since people, hours and ISK
+         * share no scale. Months before the first ratting are left off, so a
+         * line does not climb from nothing. The month still running is drawn
+         * dashed and called so far, since its counts are not finished.
+         */
+        trends: function (prefix, rows, t) {
+            var i = t.insights || {};
+            rows = (rows || []).slice();
+            while (rows.length && !(rows[0].income > 0 || rows[0].corp_tax > 0 || rows[0].players > 0)) {
+                rows.shift();
+            }
+            if (!rows.length) return;
+
+            var labels = rows.map(function (r) { return r.label; });
+            var last = rows.length - 1;
+            var pick = function (field, when) {
+                return rows.map(function (r) { return when && !when(r) ? null : parseFloat(r[field]) || 0; });
+            };
+            var line = function (label, data, color) {
+                return {
+                    label: label, data: data, borderColor: color, backgroundColor: color,
+                    borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, tension: 0.2,
+                    segment: { borderDash: function (ctx) { return ctx.p1DataIndex === last ? [6, 4] : undefined; } }
+                };
+            };
+            var options = function (y, tooltip, showLegend) {
+                tooltip.callbacks = Object.assign({
+                    title: function (items) {
+                        var k = items[0].dataIndex;
+                        return labels[k] + (k === last ? ' (' + i.so_far + ')' : '');
+                    }
+                }, tooltip.callbacks || {});
+                return {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: { x: categoryScale(false), y: y },
+                    plugins: { legend: legend(showLegend), tooltip: tooltip }
+                };
+            };
+
+            make(prefix + 'people', {
+                type: 'line',
+                data: { labels: labels, datasets: [
+                    line(t.series_players, pick('players'), COLORS.s1),
+                    line(t.series_characters, pick('characters'), COLORS.s2)
+                ] },
+                options: options({ beginAtZero: true, ticks: { color: COLORS.text, precision: 0 }, grid: { color: COLORS.grid } }, {}, true)
+            });
+
+            make(prefix + 'hours', {
+                type: 'line',
+                data: { labels: labels, datasets: [line(i.chart_hours, rows.map(function (r) { return Math.round((r.minutes || 0) / 6) / 10; }), COLORS.s1)] },
+                options: options(
+                    { beginAtZero: true, ticks: { color: COLORS.text, callback: function (v) { return v + 'h'; } }, grid: { color: COLORS.grid } },
+                    { callbacks: { label: function (ctx) { return ' ' + i.chart_hours + ': ' + hm(rows[ctx.dataIndex].minutes); } } },
+                    false
+                )
+            });
+
+            // A month nobody ratted has no rate, so its point is left out rather than drawn at nothing.
+            make(prefix + 'rate', {
+                type: 'line',
+                data: { labels: labels, datasets: [line(i.chart_rate, pick('isk_per_hour', function (r) { return r.minutes > 0; }), COLORS.s1)] },
+                options: options(iskScale(false), iskTooltip(), false)
+            });
+
+            make(prefix + 'per-player', {
+                type: 'line',
+                data: { labels: labels, datasets: [line(i.per_player, pick('income_per_player', function (r) { return r.players > 0; }), COLORS.s1)] },
+                options: options(iskScale(false), iskTooltip(), false)
+            });
+        },
+
         personal: function (d, t) {
             if (!d) return;
             R.incomeMonthly('rm-chart-monthly', d.monthly, t);
@@ -501,6 +575,7 @@
             });
             R.efficiency('rm-corp-efficiency', d.efficiency, t);
             R.earnedAndTaxed('rm-corp-months', d.months, t);
+            R.trends('rm-corp-trend-', d.months, t);
         }
     };
 

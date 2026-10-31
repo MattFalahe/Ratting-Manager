@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use RattingManager\Http\Controllers\Concerns\ResolvesViewer;
 use RattingManager\Services\Character\Players;
 use RattingManager\Services\Configuration\Settings;
+use RattingManager\Services\Npc\NpcRegistry;
 use RattingManager\Services\Ratting\ChartData;
 use RattingManager\Services\Ratting\Insights;
 use RattingManager\Services\Ratting\Period;
@@ -128,6 +129,61 @@ class ListController extends Controller
             'byPeriod' => in_array($list, self::BY_PERIOD, true),
             'title' => trans('ratting-manager::lists.title_' . str_replace('-', '_', $list)),
             'corporation' => $corporation,
+            'columnFilters' => $this->columnFilters($list, $rows, $corporation),
         ]));
+    }
+
+    /**
+     * Dropdowns that narrow the table to rows sharing a value, built from the
+     * rows themselves so every choice finds something. Each row carries the
+     * same value as data-filter-{key}. A filter with one value to offer
+     * would narrow nothing and is left out.
+     *
+     * @return array<string, array{label: string, any: string, options: array<string, string>}>
+     */
+    private function columnFilters(string $list, array $rows, bool $corporation): array
+    {
+        $text = fn (string $field) => fn (array $row) => [(string) $row[$field] => (string) $row[$field]];
+
+        $fields = match ($list) {
+            'spawns' => array_filter([
+                'npc' => $text('npc'),
+                'faction' => fn (array $row) => [$row['faction'] => NpcRegistry::FACTIONS[$row['faction']] ?? ucfirst($row['faction'])],
+                'rank' => fn (array $row) => [$row['rank'] => trans('ratting-manager::common.rank_' . $row['rank'])],
+                'size' => fn (array $row) => [$row['size'] => trans('ratting-manager::common.size_' . $row['size'])],
+                // A player is a main with every alt; on one player's own list
+                // their characters are the only split worth having.
+                'player' => $corporation ? $text('player') : null,
+                'character' => $text('character'),
+                'system' => $text('system'),
+            ]),
+            'sessions' => ['character' => $text('character'), 'system' => $text('system')],
+            'untracked' => [
+                'corporation' => fn (array $row) => [(string) ($row['corporation'] ?? '?') => $row['corporation'] ?? trans('ratting-manager::dashboard.corporation_unknown')],
+                'on_seat' => fn (array $row) => $row['on_seat']
+                    ? ['yes' => trans('ratting-manager::dashboard.on_seat')]
+                    : ['no' => trans('ratting-manager::dashboard.not_on_seat')],
+            ],
+            default => [],
+        };
+
+        $filters = [];
+        foreach ($fields as $key => $option) {
+            $options = [];
+            foreach ($rows as $row) {
+                $options += $option($row);
+            }
+            if (count($options) < 2) {
+                continue;
+            }
+            asort($options, SORT_NATURAL | SORT_FLAG_CASE);
+            $filters[$key] = [
+                'label' => trans('ratting-manager::lists.filters.' . $key),
+                'any' => trans('ratting-manager::lists.any.' . $key),
+                'options' => array_map('strval', $options),
+            ];
+        }
+
+        return $filters;
     }
 }

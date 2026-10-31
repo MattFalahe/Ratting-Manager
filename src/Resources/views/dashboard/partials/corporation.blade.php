@@ -331,11 +331,34 @@
                 <h3 class="card-title"><i class="fas fa-landmark"></i> {{ trans('ratting-manager::insights.earned_and_taxed') }}</h3>
             </div>
             <div class="card-body">
-                <div class="rm-chart"><canvas id="rm-corp-months"></canvas></div>
+                <div class="rm-chart rm-chart-double"><canvas id="rm-corp-months"></canvas></div>
                 <p class="rm-chart-note">{{ trans('ratting-manager::insights.earned_and_taxed_note') }}</p>
             </div>
         </div>
     </div>
+</div>
+
+{{-- The same months as lines, one chart per unit: a count of people, hours
+     and ISK do not share a scale, so each keeps its own. --}}
+<div class="row">
+    @foreach([
+        'people' => ['fa-users', 'trend_people', 'trend_people_note'],
+        'hours' => ['fa-clock', 'trend_hours', 'trend_hours_note'],
+        'rate' => ['fa-tachometer-alt', 'trend_rate', 'trend_rate_note'],
+        'per-player' => ['fa-user', 'trend_per_player', 'trend_per_player_note'],
+    ] as $trend => [$icon, $title, $note])
+        <div class="col-lg-6">
+            <div class="card card-dark">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas {{ $icon }}"></i> {{ trans('ratting-manager::insights.' . $title) }}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="rm-chart"><canvas id="rm-corp-trend-{{ $trend }}"></canvas></div>
+                    <p class="rm-chart-note">{{ trans('ratting-manager::insights.' . $note) }}</p>
+                </div>
+            </div>
+        </div>
+    @endforeach
 </div>
 
 </div>

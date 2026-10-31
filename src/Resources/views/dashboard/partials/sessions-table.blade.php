@@ -22,7 +22,7 @@
             </thead>
             <tbody>
                 @forelse($rows as $s)
-                    <tr>
+                    <tr data-filter-character="{{ $s['character'] }}" data-filter-system="{{ $s['system'] }}">
                         <td data-order="{{ $s['started_at'] }}"><span class="eve-time" data-eve-time="{{ str_replace(' ', 'T', $s['started_at']) }}Z">{{ substr($s['started_at'], 0, 16) }}</span></td>
                         <td>{{ $s['character'] }}</td>
                         <td>
