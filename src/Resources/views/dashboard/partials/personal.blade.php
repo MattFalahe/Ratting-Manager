@@ -18,7 +18,10 @@
                     {{ $heading ?? trans('ratting-manager::dashboard.my_ratting') }} - {{ $period->label() }}
                 </h3>
                 <div class="card-tools">
+                    {{-- Named here because an include inherits the page's variables, and those can be the Corporation tab's. --}}
                     @include('ratting-manager::partials.period-picker', [
+                        'corporations' => $playerCorporations ?? [],
+                        'pickedCorporation' => $pickedPlayerCorporation ?? null,
                         'characterOptions' => $characterOptions ?? [],
                         'pickedCharacter' => $pickedCharacter ?? null,
                     ])

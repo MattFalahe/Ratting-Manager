@@ -15,6 +15,7 @@ use RattingManager\Services\Ratting\RattingMetrics;
 use RattingManager\Services\Ratting\Scope;
 use RattingManager\Services\Ratting\WalletGaps;
 use RattingManager\Support\Access;
+use RattingManager\Support\Query;
 
 class DashboardController extends Controller
 {
@@ -70,10 +71,13 @@ class DashboardController extends Controller
         $picked = (int) $request->query('character', 0);
         $scopeCharacters = in_array($picked, $characters, true) ? [$picked] : $characters;
 
-        $personal = $this->personal(new Scope($configured, $scopeCharacters), $period, $request->query('month'));
+        // Everything on My Ratting, the rank too, is for what its own picker
+        // holds. A corporation the viewer has nothing in does not move it.
+        [$own, $ownChoices] = $this->ownCorporations($request, $this->players, $this->settings);
+        $ownParam = $this->corporationParam($own, $ownChoices);
 
-        [$boardCorporations] = $this->memberCorporations($request, $this->players, $this->settings);
-        $board = $this->metrics->hoursBoard(new Scope($boardCorporations), $period, $this->viewerMain($this->players));
+        $personal = $this->personal(new Scope($own, $scopeCharacters), $period, Query::text($request, 'month'));
+        $board = $this->metrics->hoursBoard(new Scope($own), $period, $this->viewerMain($this->players));
 
         // The Corporation tab loads with what its picker holds, so the picker
         // starts on the director's own corporation.
@@ -90,12 +94,16 @@ class DashboardController extends Controller
             'rankedPlayers' => $board['players'],
             'characterOptions' => collect($characters)->mapWithKeys(fn ($id) => [$id => $this->players->name($id)])->sort()->all(),
             'pickedCharacter' => in_array($picked, $characters, true) ? $picked : null,
+            'playerCorporations' => $this->corporationNames($ownChoices),
+            'pickedPlayerCorporation' => count($own) === 1 ? $own[0] : null,
+            'playerCorporationParam' => $ownParam,
             'corporations' => $seesCorporations ? $this->corporationNames() : [],
             'pickedCorporation' => count($corporationTab) === 1 ? $corporationTab[0] : null,
             'listUrl' => fn (string $list) => route('ratting-manager.lists.personal', array_filter([
                 'list' => $list,
                 'period' => $period->key,
                 'character' => in_array($picked, $characters, true) ? $picked : null,
+                'corporation' => $ownParam,
             ])),
         ]));
     }
@@ -107,8 +115,10 @@ class DashboardController extends Controller
     public function corporationTab(Request $request)
     {
         $period = Period::fromRequest($request);
-        $corporations = $this->pickedCorporations($request, $this->settings);
+        $readable = $this->readableCorporations($this->settings);
+        $corporations = $this->pickFrom($readable, $request, $this->players);
         $scope = new Scope($corporations);
+        $param = $this->corporationParam($corporations, $readable);
 
         $board = $this->metrics->leaderboard($scope, $period);
 
@@ -122,14 +132,15 @@ class DashboardController extends Controller
             'goneQuiet' => $this->metrics->goneQuiet($corporations),
             'untracked' => $this->metrics->untracked($corporations),
             'walletGaps' => app(WalletGaps::class)->forCorporations($corporations),
-            'spawns' => $this->charts->spawns($scope, ListController::DASHBOARD_ROWS),
-            'spawnTotal' => $this->charts->spawnCount($scope),
+            'spawns' => $this->charts->spawns($scope, $period, ListController::DASHBOARD_ROWS),
+            'spawnTotal' => $this->charts->spawnCount($scope, $period),
             'kills' => $this->charts->kills($scope, $period),
             'insights' => $insights = $this->insights->for($scope, $period, true),
             'heatmap' => $insights['heatmap'],
             'months' => $this->monthly->corporationMonths($scope),
-            'listQuery' => $listQuery = array_filter(['period' => $period->key, 'corporation' => $request->query('corporation')]),
+            'listQuery' => $listQuery = array_filter(['period' => $period->key, 'corporation' => $param]),
             'listUrl' => fn (string $list) => route('ratting-manager.lists.corporation', ['list' => $list] + $listQuery),
+            'ratterQuery' => array_filter(['corporation' => $param]),
         ];
 
         $html = view('ratting-manager::dashboard.partials.corporation', $data)->render();
@@ -171,8 +182,8 @@ class DashboardController extends Controller
             'heatmap' => $insights['heatmap'],
             'sessions' => $sessions,
             'records' => $this->charts->records($scope),
-            'spawns' => $this->charts->spawns($scope, ListController::DASHBOARD_ROWS),
-            'spawnTotal' => $this->charts->spawnCount($scope),
+            'spawns' => $this->charts->spawns($scope, $period, ListController::DASHBOARD_ROWS),
+            'spawnTotal' => $this->charts->spawnCount($scope, $period),
             'monthBreakdown' => $this->monthly->byCharacter($scope, $pickedMonth),
             'monthMatrix' => $this->monthly->characterMatrix($scope),
             'monthChoices' => MonthlyBreakdown::monthChoices(),

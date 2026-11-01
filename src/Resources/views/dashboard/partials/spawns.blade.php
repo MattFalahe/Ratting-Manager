@@ -1,4 +1,4 @@
-{{-- Special spawns, newest first. On a dashboard $total says how many there are in all, for the View all link. --}}
+{{-- Special spawns, newest first. On a dashboard $total says how many the period has, for the View all link. --}}
 <div class="card card-dark">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-star"></i> {{ trans('ratting-manager::dashboard.special_spawns') }}</h3>

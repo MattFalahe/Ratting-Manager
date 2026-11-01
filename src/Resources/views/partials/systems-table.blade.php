@@ -10,6 +10,8 @@
     $rows = $limit === null ? $rows : array_slice($rows, 0, $limit);
     $fmt = \RattingManager\Support\Format::class;
     $people = $corporation ? app(\RattingManager\Services\Character\Players::class) : null;
+    // In one go, so a long list does not read a name per row.
+    $people?->askNames(array_filter(array_column($rows, 'top_main')));
 @endphp
 
 <div class="card card-dark">
@@ -59,7 +61,7 @@
                             <td class="text-right">{{ $s['players'] }}</td>
                             <td>
                                 @if($s['top_main'])
-                                    <a href="{{ route('ratting-manager.ratters.show', $s['top_main']) }}">{{ $people->name($s['top_main']) }}</a>
+                                    <a href="{{ route('ratting-manager.ratters.show', ['characterId' => $s['top_main']] + ($ratterQuery ?? [])) }}">{{ $people->name($s['top_main']) }}</a>
                                 @else
                                     <span class="text-muted">-</span>
                                 @endif

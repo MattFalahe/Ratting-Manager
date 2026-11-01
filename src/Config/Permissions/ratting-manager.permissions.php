@@ -7,10 +7,11 @@
  *   view     - Base access (help page only)
  *   member   - Corp ratters: their own ratting, and rank and hours on the leaderboard
  *   director - Corp management: every member's ISK, hours and ISK per hour
- *   admin    - Full control: settings, diagnostics, the initial import
+ *   admin    - Full control: settings, the initial import
  *
  * Higher tiers include lower ones through the ratting-manager.tier middleware,
  * so a director does not also need the member permission on their role.
+ * Diagnostics sits outside the tiers, for SeAT's server admins only.
  */
 return [
     'view' => [

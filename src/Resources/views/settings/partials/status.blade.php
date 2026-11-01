@@ -30,6 +30,8 @@
         </dl>
         <p class="text-muted small">{{ trans('ratting-manager::settings.initialize_intro') }}</p>
         <pre class="rm-command mb-3"><code>docker exec -it seat-docker-front-1 php artisan ratting-manager:initialize</code></pre>
-        <a href="{{ route('ratting-manager.diagnostic') }}" class="btn btn-sm btn-rm-secondary"><i class="fas fa-stethoscope"></i> {{ trans('ratting-manager::settings.open_diagnostics') }}</a>
+        @if($isServerAdmin)
+            <a href="{{ route('ratting-manager.diagnostic') }}" class="btn btn-sm btn-rm-secondary"><i class="fas fa-stethoscope"></i> {{ trans('ratting-manager::settings.open_diagnostics') }}</a>
+        @endif
     </div>
 </div>

@@ -39,7 +39,8 @@ class LeaderboardController extends Controller
         $main = $this->viewerMain($players);
 
         if ($isDirector) {
-            $corporations = $this->pickedCorporations($request, $settings);
+            $readable = $this->readableCorporations($settings);
+            $corporations = $this->pickFrom($readable, $request, $players);
             $board = $metrics->leaderboard(new Scope($corporations), $period);
 
             return view('ratting-manager::leaderboard.index', [
@@ -53,6 +54,7 @@ class LeaderboardController extends Controller
                 'ownMain' => $main,
                 'corporations' => $this->corporationNames(),
                 'pickedCorporation' => count($corporations) === 1 ? $corporations[0] : null,
+                'ratterQuery' => array_filter(['corporation' => $this->corporationParam($corporations, $readable)]),
             ]);
         }
 
@@ -74,7 +76,7 @@ class LeaderboardController extends Controller
             'ownMain' => $main,
             'ownRank' => $board['own_rank'],
             'playerCount' => $board['players'],
-            'corporations' => $choices === [] ? [] : $this->corporationNames($choices),
+            'corporations' => $this->corporationNames($choices),
             'pickedCorporation' => count($corporations) === 1 ? $corporations[0] : null,
         ]);
     }

@@ -137,6 +137,17 @@ class Players
         return $this->charactersOf[(int) $user->id] ?? [];
     }
 
+    /**
+     * Names for a list about to be shown, in one go, where name() on each row
+     * would read the unnamed ones one at a time.
+     *
+     * @param int[] $characterIds
+     */
+    public function askNames(array $characterIds): void
+    {
+        $this->loadNames($characterIds);
+    }
+
     public function name(int $characterId): string
     {
         $this->loadNames([$characterId]);
@@ -299,19 +310,34 @@ class Players
         return $this->seatAuth([$characterId]);
     }
 
-    /** The corporation the character is in now, by the newest answer on file. */
-    public function currentCorporationName(int $characterId): ?string
+    /**
+     * The corporation each character is in now, by the newest answer on file.
+     * A character nobody knows the corporation of is left out.
+     *
+     * @param int[] $characterIds
+     * @return array<int, string> character_id => corporation name
+     */
+    public function currentCorporationNames(array $characterIds): array
     {
-        $corporationId = $this->current->of([$characterId])[$characterId]['corporation_id'] ?? null;
-        if ($corporationId === null) {
-            return null;
+        $current = $this->current->of($characterIds);
+        if ($current === []) {
+            return [];
         }
 
-        $row = $this->lookups->known([$characterId])[$characterId] ?? null;
+        $known = $this->lookups->known(array_keys($current));
+        $names = $this->lookups->corporationNames(array_column($current, 'corporation_id'));
 
-        return $this->lookups->corporationName($corporationId)
-            ?? (($row && (int) $row->corporation_id === $corporationId) ? $row->corporation_name : null)
-            ?? ('Corporation ' . $corporationId);
+        $found = [];
+        foreach ($current as $id => $answer) {
+            $corporationId = $answer['corporation_id'];
+            $row = $known[$id] ?? null;
+
+            $found[$id] = $names[$corporationId]
+                ?? (($row && (int) $row->corporation_id === $corporationId) ? $row->corporation_name : null)
+                ?? ('Corporation ' . $corporationId);
+        }
+
+        return $found;
     }
 
     public function hasWalletToken(int $characterId): bool

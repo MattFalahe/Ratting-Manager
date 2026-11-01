@@ -32,7 +32,7 @@
                         @endif
                     </td>
                     <td>
-                        <a href="{{ route('ratting-manager.ratters.show', $row['main_id']) }}">{{ $row['name'] }}</a>
+                        <a href="{{ route('ratting-manager.ratters.show', ['characterId' => $row['main_id']] + ($ratterQuery ?? [])) }}">{{ $row['name'] }}</a>
                         @if(count($row['characters']) > 1)
                             <small class="text-muted">(+{{ count($row['characters']) - 1 }})</small>
                         @endif

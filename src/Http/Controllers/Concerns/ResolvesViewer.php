@@ -5,7 +5,9 @@ namespace RattingManager\Http\Controllers\Concerns;
 use Illuminate\Support\Facades\DB;
 use RattingManager\Services\Character\Players;
 use RattingManager\Services\Configuration\Settings;
+use RattingManager\Services\Ratting\Summaries;
 use RattingManager\Support\Access;
+use RattingManager\Support\Query;
 
 trait ResolvesViewer
 {
@@ -22,28 +24,6 @@ trait ResolvesViewer
         $characters = $this->viewerCharacters($players);
 
         return $main > 0 ? $main : (int) ($characters[0] ?? 0);
-    }
-
-    /**
-     * The configured corporations these characters are in now, or every
-     * configured corporation when they are in none.
-     *
-     * @param int[] $characters
-     * @return int[]
-     */
-    protected function corporationsOf(array $characters, Settings $settings): array
-    {
-        $configured = $settings->configuredCorporations();
-
-        $own = $characters === [] ? [] : DB::table('character_affiliations')
-            ->whereIn('character_id', $characters)
-            ->pluck('corporation_id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
-
-        $mine = array_values(array_intersect($configured, $own));
-
-        return $mine !== [] ? $mine : $configured;
     }
 
     /**
@@ -102,18 +82,30 @@ trait ResolvesViewer
     /**
      * One corporation out of these, or all of them: the one the picker sent,
      * all of them for All, and otherwise the viewer's own, their main's
-     * corporation first. A viewer in none of them starts on all of them.
+     * corporation first. All is only ever picked on purpose, so no page opens
+     * on corporations added together: a viewer in none of them starts on the
+     * first.
      *
      * @param int[] $choices
      * @return int[]
      */
     protected function pickFrom(array $choices, $request, Players $players): array
     {
+        return $this->pickOr($choices, $request, fn () => $this->homeCorporation($this->viewerCharacters($players), $this->viewerMain($players), $choices));
+    }
+
+    /**
+     * @param int[] $choices
+     * @param callable(): ?int $home where to open when the picker sent nothing usable
+     * @return int[]
+     */
+    private function pickOr(array $choices, $request, callable $home): array
+    {
         if (count($choices) < 2) {
             return $choices;
         }
 
-        $picked = (string) $request->query('corporation', '');
+        $picked = Query::text($request, 'corporation');
         if ($picked === Access::ALL_CORPORATIONS) {
             return $choices;
         }
@@ -121,27 +113,89 @@ trait ResolvesViewer
             return [(int) $picked];
         }
 
-        $own = $this->homeCorporation($this->viewerCharacters($players), $this->viewerMain($players), $choices);
+        return [$home() ?? $choices[0]];
+    }
 
-        return $own !== null ? [$own] : $choices;
+    /**
+     * What a link sends to stay on a pick. Nothing at all with nothing to pick
+     * between, so a server tracking one corporation keeps its short addresses.
+     *
+     * @param int[] $corporations what the page is showing
+     * @param int[] $choices
+     */
+    protected function corporationParam(array $corporations, array $choices): ?string
+    {
+        if (count($choices) < 2) {
+            return null;
+        }
+
+        return count($corporations) === 1 ? (string) $corporations[0] : Access::ALL_CORPORATIONS;
     }
 
     /**
      * The corporations a member's own board covers, and the ones they can
-     * pick between: the tracked corporations their characters are in now,
-     * their main's picked first. In none of them, every tracked corporation
-     * stands in and there is nothing to pick.
+     * pick between: the tracked corporations their characters are in now, or
+     * every tracked corporation when they are in none.
      *
      * @return array{0: int[], 1: int[]} the board's corporations, then the choices
      */
     protected function memberCorporations($request, Players $players, Settings $settings): array
     {
-        $own = Access::trackedCorporationsOf();
-        if ($own === []) {
-            return [$settings->configuredCorporations(), []];
+        $choices = Access::trackedCorporationsOf() ?: $settings->configuredCorporations();
+
+        return [$this->pickFrom($choices, $request, $players), $choices];
+    }
+
+    /**
+     * Which of these corporations a player's own figures can be read for: the
+     * ones they are in now and the ones they have ratted for, so someone who
+     * moved on still has what they did before.
+     *
+     * @param int[] $characters
+     * @param int[] $corporations
+     * @return int[]
+     */
+    protected function corporationsOfPlayer(array $characters, array $corporations): array
+    {
+        if ($characters === [] || $corporations === []) {
+            return [];
         }
 
-        return [$this->pickFrom($own, $request, $players), $own];
+        $theirs = array_merge(
+            DB::table('character_affiliations')->whereIn('character_id', $characters)->pluck('corporation_id')->all(),
+            DB::table(Summaries::DAILY)->whereIn('character_id', $characters)->whereIn('corporation_id', $corporations)->distinct()->pluck('corporation_id')->all()
+        );
+
+        return array_values(array_intersect($corporations, array_map('intval', $theirs)));
+    }
+
+    /**
+     * The corporations My Ratting and the viewer's own lists show, and the
+     * ones they can pick between.
+     *
+     * @return array{0: int[], 1: int[]} what to show, then the choices
+     */
+    protected function ownCorporations($request, Players $players, Settings $settings): array
+    {
+        $choices = $this->corporationsOfPlayer($this->viewerCharacters($players), $settings->configuredCorporations());
+
+        return [$this->pickFrom($choices, $request, $players), $choices];
+    }
+
+    /**
+     * The corporations a director's page on one player shows, and the ones to
+     * pick between: those the director may read that the player belongs to.
+     * With nothing sent it opens on the player's own, as they see it themselves.
+     *
+     * @param int[] $characters
+     * @param int[] $readable
+     * @return array{0: int[], 1: int[]} what to show, then the choices
+     */
+    protected function ratterCorporations($request, array $characters, int $main, array $readable): array
+    {
+        $choices = $this->corporationsOfPlayer($characters, $readable) ?: $readable;
+
+        return [$this->pickOr($choices, $request, fn () => $this->homeCorporation($characters, $main, $choices)), $choices];
     }
 
     /**

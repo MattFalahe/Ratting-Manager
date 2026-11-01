@@ -13,48 +13,57 @@ use RattingManager\Services\Ratting\Scope;
 use RattingManager\Services\Ratting\Summaries;
 use RattingManager\Services\Ratting\Ticks;
 use RattingManager\Services\Ratting\WalletGaps;
+use RattingManager\Support\Query;
 use Seat\Web\Http\Controllers\Controller;
 
 class RatterController extends Controller
 {
     use ResolvesViewer;
 
-    /** Every player who ratted in the last 90 days, to search and open. */
-    public function index(RattingMetrics $metrics, Players $players, Settings $settings)
+    /** How far back the Ratter Lookup reaches. */
+    public const LOOKUP_DAYS = 90;
+
+    /** Every player who ratted for the corporation picked in the last 90 days, to search and open. */
+    public function index(Request $request, RattingMetrics $metrics, Players $players, Settings $settings)
     {
-        $corporations = $this->readableCorporations($settings);
+        $readable = $this->readableCorporations($settings);
+        $corporations = $this->pickFrom($readable, $request, $players);
         $rows = $corporations === []
             ? []
-            : array_values($metrics->collect(new Scope($corporations), now()->subDays(89)->startOfDay(), now())['players']);
+            : array_values($metrics->collect(new Scope($corporations), now()->subDays(self::LOOKUP_DAYS - 1)->startOfDay(), now())['players']);
 
         usort($rows, fn ($a, $b) => strcmp((string) $b['last_tick'], (string) $a['last_tick']));
 
         return view('ratting-manager::ratter.index', [
+            'period' => Period::fromRequest($request),
             'rows' => $players->markStanding($rows, $corporations),
             'notConfigured' => $corporations === [],
+            'corporations' => $this->corporationNames($readable),
+            'pickedCorporation' => count($corporations) === 1 ? $corporations[0] : null,
+            'ratterQuery' => array_filter(['corporation' => $this->corporationParam($corporations, $readable)]),
         ]);
     }
 
     /** One player's ratting, as they see it on My Ratting, plus where each character's figures come from. */
     public function show(Request $request, int $characterId, Players $players, Settings $settings, DashboardController $dashboard, RattingMetrics $metrics, WalletGaps $gaps)
     {
-        $corporations = $this->readableCorporations($settings);
+        $readable = $this->readableCorporations($settings);
         $period = Period::fromRequest($request);
         $characters = $players->charactersOfPlayer($characterId);
-        $this->abortUnlessReadable($characters, $corporations);
+        $this->abortUnlessReadable($characters, $readable);
         $main = $players->mainOf($characterId);
 
-        $personal = $dashboard->personal(new Scope($corporations, $characters), $period, $request->query('month'));
+        [$corporations, $choices] = $this->ratterCorporations($request, $characters, $main, $readable);
+        $param = $this->corporationParam($corporations, $choices);
 
-        // The player's place by hours, on the board they see on My Ratting (their
-        // main's corporation when they are in more than one), as long as that
-        // is a board this viewer may read.
-        $theirs = array_values(array_intersect($this->corporationsOf($characters, $settings), $corporations)) ?: $corporations;
-        $home = count($theirs) > 1 ? $this->homeCorporation($characters, $main, $theirs) : null;
-        $board = $metrics->hoursBoard(new Scope($home !== null ? [$home] : $theirs), $period, $main);
+        $personal = $dashboard->personal(new Scope($corporations, $characters), $period, Query::text($request, 'month'));
+
+        // The player's place by hours, on the board of what this page shows.
+        $board = $metrics->hoursBoard(new Scope($corporations), $period, $main);
 
         $kinds = Ticks::kindsOf($characters, now()->subDays(90), $corporations);
         $lost = $gaps->forCharacters($characters);
+        $corporationNow = $players->currentCorporationNames($characters);
 
         $sources = [];
         foreach ($characters as $id) {
@@ -68,7 +77,7 @@ class RatterController extends Controller
                 'seat_auth' => $players->characterAuth($id),
                 'counts' => $counts,
                 'coverage' => $seenByCorp > 0 ? round($counts['paired'] / $seenByCorp * 100) : null,
-                'corporation' => $players->currentCorporationName($id),
+                'corporation' => $corporationNow[$id] ?? null,
             ];
         }
 
@@ -87,7 +96,11 @@ class RatterController extends Controller
             'mainName' => $players->name($main),
             'sources' => $sources,
             'characterId' => $characterId,
-            'listUrl' => fn (string $list) => route('ratting-manager.ratters.list', ['characterId' => $characterId, 'list' => $list, 'period' => $period->key]),
+            'playerCorporations' => $this->corporationNames($choices),
+            'pickedPlayerCorporation' => count($corporations) === 1 ? $corporations[0] : null,
+            'playerCorporationParam' => $param,
+            'lookupUrl' => route('ratting-manager.ratters.index', array_filter(['corporation' => Query::text($request, 'corporation')])),
+            'listUrl' => fn (string $list) => route('ratting-manager.ratters.list', array_filter(['characterId' => $characterId, 'list' => $list, 'period' => $period->key, 'corporation' => $param])),
         ]));
     }
 }

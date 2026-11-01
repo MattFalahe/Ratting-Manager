@@ -15,6 +15,7 @@ class HelpController extends Controller
             'isMember' => Access::atLeast('member'),
             'isDirector' => Access::isDirector(),
             'isAdmin' => Access::isAdmin(),
+            'isServerAdmin' => Access::isServerAdmin(),
             'sessionGap' => SettingsRegistry::default('data.session_gap_minutes'),
             'versionStatus' => $versions->getStatus(),
         ]);

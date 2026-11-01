@@ -38,6 +38,7 @@ class RattingMetrics
         // Names go on after the cache, so a character still being looked up
         // when the figures were cached is named as soon as the lookup has them.
         $this->players->load(array_keys($collected['players']));
+        $this->players->askNames(array_keys($collected['players']));
         foreach ($collected['players'] as $main => &$player) {
             $player['name'] = $this->players->name((int) $main);
             $player['ratted'] = self::ratted($player);
@@ -164,6 +165,7 @@ class RattingMetrics
         ));
 
         $this->players->load($last->pluck('character_id')->map(fn ($id) => (int) $id)->all());
+        $this->players->askNames($last->map(fn ($row) => $this->players->mainOf((int) $row->character_id))->unique()->values()->all());
 
         $byPlayer = [];
         foreach ($last as $row) {
@@ -224,18 +226,22 @@ class RattingMetrics
         // which says how long there is to fix it.
         $lost = app(WalletGaps::class)->forCharacters($ids);
 
+        // A token with the wallet scope that has not brought rows in yet; the
+        // coverage badge covers that case.
+        $shown = $rows->reject(fn ($row) => $this->players->hasWalletToken((int) $row->character_id) || isset($lost[(int) $row->character_id]));
+        $shownIds = $shown->pluck('character_id')->map(fn ($id) => (int) $id)->all();
+
+        // In one go, so a long list costs a handful of queries and not a few per row.
+        $this->players->askNames($shownIds);
+        $corporationNames = $this->players->currentCorporationNames($shownIds);
+
         $list = [];
-        foreach ($rows as $row) {
+        foreach ($shown as $row) {
             $id = (int) $row->character_id;
-            if ($this->players->hasWalletToken($id) || isset($lost[$id])) {
-                // A token with the wallet scope that has not brought rows in
-                // yet; the coverage badge covers that case.
-                continue;
-            }
             $list[] = [
                 'character_id' => $id,
                 'name' => $this->players->name($id),
-                'corporation' => $this->players->currentCorporationName($id),
+                'corporation' => $corporationNames[$id] ?? null,
                 'on_seat' => $this->players->isKnownToSeat($id),
                 'ticks' => (int) $row->ticks,
                 'net' => (float) $row->net,

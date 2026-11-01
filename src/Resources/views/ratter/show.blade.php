@@ -8,7 +8,7 @@
 @endsection
 
 @section('rm-body')
-    <p><a href="{{ route('ratting-manager.ratters.index') }}"><i class="fas fa-arrow-left"></i> {{ trans('ratting-manager::ratter.back') }}</a></p>
+    <p><a href="{{ $lookupUrl }}"><i class="fas fa-arrow-left"></i> {{ trans('ratting-manager::ratter.back') }}</a></p>
 
     @if($standing['left'] || $standing['seat_auth'])
         <p class="text-muted">

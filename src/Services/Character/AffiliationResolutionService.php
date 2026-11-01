@@ -111,15 +111,38 @@ class AffiliationResolutionService
             return null;
         }
 
+        return $this->corporationNames([$corporationId])[$corporationId] ?? null;
+    }
+
+    /**
+     * The same for many at once, so a long list reads them in one go.
+     *
+     * @param int[] $corporationIds
+     * @return array<int, string> corporation_id => name, for the ones a name was found for
+     */
+    public function corporationNames(array $corporationIds): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $corporationIds))));
+        if ($ids === []) {
+            return [];
+        }
+
         try {
-            return DB::table('corporation_infos')->where('corporation_id', $corporationId)->value('name')
-                ?: DB::table('universe_names')->where('entity_id', $corporationId)->where('category', 'corporation')->value('name')
-                ?: DB::table(self::TABLE)
-                    ->where('corporation_id', $corporationId)
-                    ->whereNotNull('corporation_name')
-                    ->value('corporation_name');
+            $names = array_filter(DB::table('corporation_infos')->whereIn('corporation_id', $ids)->pluck('name', 'corporation_id')->all());
+
+            $left = array_values(array_diff($ids, array_keys($names)));
+            if ($left !== []) {
+                $names += array_filter(DB::table('universe_names')->whereIn('entity_id', $left)->where('category', 'corporation')->pluck('name', 'entity_id')->all());
+            }
+
+            $left = array_values(array_diff($ids, array_keys($names)));
+            if ($left !== []) {
+                $names += array_filter(DB::table(self::TABLE)->whereIn('corporation_id', $left)->whereNotNull('corporation_name')->pluck('corporation_name', 'corporation_id')->all());
+            }
+
+            return $names;
         } catch (\Throwable $e) {
-            return null;
+            return [];
         }
     }
 

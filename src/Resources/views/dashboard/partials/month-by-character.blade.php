@@ -1,7 +1,7 @@
 {{--
     What each character earned in one month, with the player's total, and
-    the last 12 months by character. The month picker keeps the period and
-    character picked above, so only the month changes.
+    the last 12 months by character. The month picker keeps the period,
+    character and corporation picked above, so only the month changes.
 --}}
 @php
     $fmt = \RattingManager\Support\Format::class;
@@ -16,6 +16,9 @@
                 <input type="hidden" name="period" value="{{ $period->key }}">
                 @if(!empty($pickedCharacter))
                     <input type="hidden" name="character" value="{{ $pickedCharacter }}">
+                @endif
+                @if(!empty($playerCorporationParam))
+                    <input type="hidden" name="corporation" value="{{ $playerCorporationParam }}">
                 @endif
                 <select name="month" class="form-control form-control-sm" aria-label="{{ trans('ratting-manager::insights.month') }}">
                     @foreach($monthChoices as $key => $label)

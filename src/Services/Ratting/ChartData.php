@@ -266,18 +266,18 @@ class ChartData
         ];
     }
 
-    /** How many special spawns the scope has in all. */
-    public function spawnCount(Scope $scope): int
+    /** How many special spawns the scope has in the period. */
+    public function spawnCount(Scope $scope, Period $period): int
     {
         return (int) FigureCache::remember(
-            'chart:spawn-count:' . $scope->cacheKey(),
-            fn () => $scope->apply(DB::table('ratting_manager_special_spawns as s'), 's')->count()
+            'chart:spawn-count:' . $scope->cacheKey() . ':' . FigureCache::range($period->start, $period->end),
+            fn () => $this->spawnsIn($scope, $period)->count()
         );
     }
 
-    public function spawns(Scope $scope, int $limit = 25): array
+    public function spawns(Scope $scope, Period $period, int $limit = 25): array
     {
-        $rows = $this->rows('spawns', $scope, (string) $limit, fn () => $scope->apply(DB::table('ratting_manager_special_spawns as s'), 's')
+        $rows = $this->rows('spawns', $scope, FigureCache::range($period->start, $period->end) . ':' . $limit, fn () => $this->spawnsIn($scope, $period)
             ->leftJoin('ratting_manager_npc_types as n', 'n.type_id', '=', 's.npc_type_id')
             ->orderByDesc('s.ticked_at')
             ->limit($limit)
@@ -298,6 +298,12 @@ class ChartData
             'size' => $r->size ?? 'unknown',
             'quantity' => (int) $r->quantity,
         ])->all();
+    }
+
+    private function spawnsIn(Scope $scope, Period $period)
+    {
+        return $scope->apply(DB::table('ratting_manager_special_spawns as s'), 's')
+            ->whereBetween('s.ticked_at', [$period->start, $period->end]);
     }
 
     /**

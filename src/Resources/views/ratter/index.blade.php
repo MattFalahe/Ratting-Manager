@@ -18,6 +18,11 @@
         <div class="card card-dark">
             <div class="card-header">
                 <h3 class="card-title"><i class="fas fa-search"></i> {{ trans('ratting-manager::ratter.lookup_title') }}</h3>
+                @if(count($corporations) > 1)
+                    <div class="card-tools">
+                        @include('ratting-manager::partials.period-picker', ['showPeriod' => false, 'characterOptions' => []])
+                    </div>
+                @endif
             </div>
             <div class="card-body">
                 <p class="text-muted">{{ trans('ratting-manager::ratter.lookup_intro') }}</p>
@@ -38,7 +43,7 @@
                         @foreach($rows as $row)
                             <tr>
                                 <td>
-                                    <a href="{{ route('ratting-manager.ratters.show', $row['main_id']) }}">{{ $row['name'] }}</a>
+                                    <a href="{{ route('ratting-manager.ratters.show', ['characterId' => $row['main_id']] + $ratterQuery) }}">{{ $row['name'] }}</a>
                                     @include('ratting-manager::partials.player-tags', ['row' => $row])
                                 </td>
                                 <td class="text-right">{{ count($row['characters']) }}</td>

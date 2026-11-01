@@ -3,12 +3,14 @@
 namespace RattingManager\Services\Ratting;
 
 use RattingManager\Http\Controllers\ListController;
+use RattingManager\Http\Controllers\RatterController;
 use RattingManager\Services\Configuration\Settings;
+use Throwable;
 
 /**
- * Works out the figures the Corporation tab and the Leaderboard open with
- * right after an import, so the first director to open them does not wait
- * for the month's ticks to be read.
+ * Works out the figures the Corporation tab, the Leaderboard and the Ratter
+ * Lookup open with right after an import, so the first director to open them
+ * does not wait for the month's ticks to be read.
  */
 class FigureWarmer
 {
@@ -29,11 +31,26 @@ class FigureWarmer
 
     public function warm(): void
     {
-        $corporations = $this->settings->configuredCorporations();
-        if ($corporations === []) {
-            return;
+        $failed = null;
+
+        // One at a time, as the pickers open on one corporation and All is only
+        // worked out when someone picks it. One that cannot be read leaves the rest.
+        foreach ($this->settings->configuredCorporations() as $corporation) {
+            try {
+                $this->warmCorporation($corporation);
+            } catch (Throwable $e) {
+                $failed ??= $e;
+            }
         }
 
+        if ($failed !== null) {
+            throw $failed;
+        }
+    }
+
+    private function warmCorporation(int $corporation): void
+    {
+        $corporations = [$corporation];
         $scope = new Scope($corporations);
         $period = Period::from(null);
 
@@ -48,10 +65,13 @@ class FigureWarmer
         $this->charts->systems($scope, $period);
         $this->charts->spaceCounts($scope, $period);
         $this->charts->kills($scope, $period);
-        $this->charts->spawns($scope, ListController::DASHBOARD_ROWS);
-        $this->charts->spawnCount($scope);
+        $this->charts->spawns($scope, $period, ListController::DASHBOARD_ROWS);
+        $this->charts->spawnCount($scope, $period);
         $this->charts->monthly($scope, true);
         $this->charts->daily($scope, $period);
         $this->charts->ratterMovement($scope);
+
+        // The Ratter Lookup's list.
+        $this->metrics->collect($scope, now()->subDays(RatterController::LOOKUP_DAYS - 1)->startOfDay(), now());
     }
 }

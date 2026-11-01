@@ -20,7 +20,7 @@
                 <tbody>
                     @foreach($rows as $gap)
                         <tr>
-                            <td><a href="{{ route('ratting-manager.ratters.show', $gap['character_id']) }}">{{ $gap['name'] }}</a></td>
+                            <td><a href="{{ route('ratting-manager.ratters.show', ['characterId' => $gap['character_id']] + ($ratterQuery ?? [])) }}">{{ $gap['name'] }}</a></td>
                             <td>{{ trans('ratting-manager::dashboard.wallet_gap_state_' . $gap['state']) }}</td>
                             <td>{{ substr($gap['since'], 0, 16) }}</td>
                             <td class="text-right">{{ number_format($gap['ticks']) }}</td>

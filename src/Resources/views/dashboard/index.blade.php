@@ -90,10 +90,13 @@
         section = $(this).attr('href');
     });
 
+    var request = null;
     function loadCorporation(query) {
+        // A slower answer to an earlier pick must not land over this one.
+        if (request) { request.abort(); }
         $('#rm-corp-content').empty();
         $('#rm-corp-loading').show();
-        $.getJSON(tabUrl + '?' + query)
+        request = $.getJSON(tabUrl + '?' + query)
             .done(function (resp) {
                 $('#rm-corp-content').html(resp.html);
                 $('#rm-corp-loading').hide();
@@ -102,7 +105,8 @@
                 if (window.rmCharacterLookup) { window.rmCharacterLookup.watch(resp.pending || []); }
                 if (window.EveTime) { window.EveTime.convert(document.getElementById('rm-corp-content')); }
             })
-            .fail(function () {
+            .fail(function (xhr, status) {
+                if (status === 'abort') { return; }
                 $('#rm-corp-loading').html(
                     '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ' +
                     $('<div>').text(t.load_failed).html() + ' <a href="#" onclick="location.reload()">' +

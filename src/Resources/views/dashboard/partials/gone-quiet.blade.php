@@ -25,7 +25,7 @@
                 @forelse($shown as $g)
                     <tr>
                         <td>
-                            <a href="{{ route('ratting-manager.ratters.show', $g['main_id']) }}">{{ $g['name'] }}</a>
+                            <a href="{{ route('ratting-manager.ratters.show', ['characterId' => $g['main_id']] + ($ratterQuery ?? [])) }}">{{ $g['name'] }}</a>
                             @include('ratting-manager::partials.player-tags', ['row' => $g])
                         </td>
                         <td class="text-right">{{ $g['ticks'] }}</td>

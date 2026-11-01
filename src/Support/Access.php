@@ -50,6 +50,18 @@ final class Access
     }
 
     /**
+     * SeAT's own administrator, the setting on the user behind global.superuser.
+     * No role can give it, so the plugin's admin permission does not reach what
+     * this guards.
+     */
+    public static function isServerAdmin($user = null): bool
+    {
+        $user = $user ?? auth()->user();
+
+        return $user && $user->can('global.superuser');
+    }
+
+    /**
      * The tracked corporations a user's characters are in now.
      *
      * @return int[]

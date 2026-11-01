@@ -15,5 +15,5 @@ return [
 
     // Admin tier
     'admin_label' => 'Admin',
-    'admin_description' => 'All Director permissions for every tracked corporation, plus: settings, diagnostics and the initial import.',
+    'admin_description' => 'All Director permissions for every tracked corporation, plus: settings and the initial import.',
 ];

@@ -13,6 +13,7 @@ use RattingManager\Services\Notification\RoutingMap;
 use RattingManager\Services\Notification\WebhookDeliveryService;
 use RattingManager\Services\Ratting\RawTicks;
 use RattingManager\Services\Universe\HomeSpace;
+use RattingManager\Support\Access;
 use Seat\Web\Http\Controllers\Controller;
 
 class SettingsController extends Controller
@@ -40,6 +41,7 @@ class SettingsController extends Controller
             'lastProcessAt' => $settings->get('state.last_process_at'),
             'lastReport' => $settings->get('state.last_process_report'),
             'initializedAt' => $settings->get('state.initialized_at'),
+            'isServerAdmin' => Access::isServerAdmin(),
         ] + $this->notifications($settings, array_column($tracked, 'name', 'id')));
     }
 

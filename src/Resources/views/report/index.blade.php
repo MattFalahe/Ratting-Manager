@@ -151,7 +151,7 @@
                                 <tr>
                                     <td data-order="{{ $i }}">{{ $i + 1 }}</td>
                                     <td>
-                                        <a href="{{ route('ratting-manager.ratters.show', array_filter(['characterId' => $row['main_id'], 'period' => 'm-' . $pickedMonth])) }}">{{ $row['name'] }}</a>
+                                        <a href="{{ route('ratting-manager.ratters.show', ['characterId' => $row['main_id'], 'period' => 'm-' . $pickedMonth] + $ratterQuery) }}">{{ $row['name'] }}</a>
                                         @if(count($row['characters']) > 1)
                                             <small class="text-muted">(+{{ count($row['characters']) - 1 }})</small>
                                         @endif

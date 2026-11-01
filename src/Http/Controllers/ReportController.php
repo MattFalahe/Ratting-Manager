@@ -13,6 +13,7 @@ use RattingManager\Services\Ratting\Period;
 use RattingManager\Services\Ratting\RattingMetrics;
 use RattingManager\Services\Ratting\Scope;
 use RattingManager\Support\Csv;
+use RattingManager\Support\Query;
 use Seat\Web\Http\Controllers\Controller;
 
 /**
@@ -83,9 +84,10 @@ class ReportController extends Controller
 
     private function figures(Request $request, Settings $settings, RattingMetrics $metrics, Players $players, ChartData $charts): array
     {
-        $month = self::month($request->query('month'));
+        $month = self::month(Query::text($request, 'month'));
         $period = Period::month($month);
-        $corporations = $this->pickedCorporations($request, $settings);
+        $readable = $this->readableCorporations($settings);
+        $corporations = $this->pickFrom($readable, $request, $players);
         $scope = new Scope($corporations);
 
         $board = $metrics->leaderboard($scope, $period);
@@ -103,6 +105,7 @@ class ReportController extends Controller
             'pickedMonth' => $month->format('Y-m'),
             'corporationIds' => $corporations,
             'pickedCorporation' => count($corporations) === 1 ? $corporations[0] : null,
+            'ratterQuery' => array_filter(['corporation' => $this->corporationParam($corporations, $readable)]),
             'rows' => $rows,
             'totals' => $totals,
             'median' => $board['median_isk_per_hour'],

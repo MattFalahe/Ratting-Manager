@@ -453,8 +453,7 @@
                             'custom-styling' => ['fa-paint-brush', 'custom_styling'],
                             'faq' => ['fa-question-circle', 'faq'],
                             'troubleshooting' => ['fa-wrench', 'troubleshooting'],
-                            'admin-diagnostics' => ['fa-stethoscope', 'admin_diagnostics'],
-                        ] as $section => [$icon, $label])
+                        ] + ($isServerAdmin ? ['admin-diagnostics' => ['fa-stethoscope', 'admin_diagnostics']] : []) as $section => [$icon, $label])
                             <li class="nav-item">
                                 <a href="#" class="nav-link {{ $loop->first ? 'active' : '' }}" data-section="{{ $section }}">
                                     <i class="fas {{ $icon }}"></i> {{ trans('ratting-manager::help.' . $label) }}
@@ -624,6 +623,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                         <li><strong>Who has left, and who is not on SeAT</strong>: everyone who rats is watched for leaving, token or no token, with the time they went and their last tick, and a badge on anyone SeAT holds no token for.</li>
                         <li><strong>Discord and Slack notifications</strong>: alerts for special spawns, ratting ships lost, outsiders in home space, stalled data, untracked ratters, lost wallet tokens and players gone quiet, and weekly and monthly Director Reports and Rankings.</li>
                     </ul>
+                    <p class="mb-0"><small>Thanks to Bahu90, whose fork of a very early dev version gave me some insights, and to Claw [UK Corp], who tested the dev version, helped me improve the plugin and gave some valid insights.</small></p>
                 </div>
 
                 {{-- What is Ratting Manager? --}}
@@ -698,7 +698,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                         <div class="feature-item">
                             <i class="fas fa-stethoscope"></i>
                             <h5>Diagnostics</h5>
-                            <p>Health checks, a master test, settings and data checks, a tick trace and notification testing, for admins.</p>
+                            <p>Health checks, a master test, settings and data checks, a tick trace and notification testing, for server admins.</p>
                         </div>
                     </div>
                 </div>
@@ -731,6 +731,8 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                                     <i class="fas fa-cog"></i>
                                     Settings
                                 </a>
+                            @endif
+                            @if($isServerAdmin)
                                 <a href="{{ route('ratting-manager.diagnostic') }}" class="quick-link">
                                     <i class="fas fa-stethoscope"></i>
                                     Diagnostics
@@ -788,7 +790,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
             <div id="my-ratting" class="help-section">
                 <div class="help-card">
                     <h3><i class="fas fa-crosshairs"></i> My Ratting</h3>
-                    <p>Your own ratting across all your characters, or one of them with the character picker. The period picker covers this month, last month, the last 30 or 90 days and the last 12 months, any of the 11 calendar months before this one, or a custom range of days within the last year. A pick applies as soon as you make it; a custom range waits for its Show button, since it takes two dates.</p>
+                    <p>Your own ratting across all your characters, or one of them with the character picker. Everything on the page, your rank included, is for one corporation: the one your main character is in. If you belong to more than one tracked corporation, your characters being in them now or having ratted for them, a corporation picker switches between them, and <strong>All corporations</strong> adds them together. The period picker covers this month, last month, the last 30 or 90 days and the last 12 months, any of the 11 calendar months before this one, or a custom range of days within the last year. A pick applies as soon as you make it; a custom range waits for its Show button, since it takes two dates.</p>
                     <ul>
                         <li><strong>Ratting income</strong> is what you received: bounties plus ESS payouts.</li>
                         <li><strong>Corporation tax paid</strong> is the corporation's cut of your bounties and ESS payouts, from the corporation journal, with the share of the payout it took. The income chart shows it month by month, and Month by character shows it per character.</li>
@@ -798,7 +800,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                         <li><strong>When I rat</strong> shades each hour of the week, in EVE time, by how often you ratted in it. Hover a square for the count.</li>
                         <li><strong>Sessions</strong> are runs of ticks with no gap longer than {{ $sessionGap }} minutes. A session's ISK per hour counts bounties only, because ESS pays out later and is not tied to one session.</li>
                     </ul>
-                    <p>Long lists, such as sessions, systems and special spawns, show their first 10 rows. <strong>View all</strong> opens the whole list on its own page, where it can be searched and sorted, and narrowed with dropdowns: special spawns by NPC, faction, rank, size, character and system, sessions by character and system. A dropdown only shows when the list has more than one value for it.</p>
+                    <p>Long lists, such as sessions, systems and special spawns, show their first 10 rows. <strong>View all</strong> opens the whole list for the same period on its own page, where it can be searched and sorted, and narrowed with dropdowns: special spawns by NPC, faction, rank, size, character and system, sessions by character and system. A dropdown offers only what is in the list, and only shows when the list has more than one value for it.</p>
                     <h4>Insights</h4>
                     <ul>
                         <li><strong>Favourite system</strong> is where you spent the most time; <strong>best-paying system</strong> is where your ISK per hour was highest, among systems with at least an hour of ratting.</li>
@@ -816,7 +818,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
             <div id="corporation" class="help-section">
                 <div class="help-card">
                     <h3><i class="fas fa-building"></i> The Corporation Tab</h3>
-                    <p>Directors get a second tab on the Dashboard, for the tracked corporations their characters are in now. Admins get every tracked corporation. It loads when it is first opened, and has its own corporation and period pickers. With more than one corporation to choose from, it opens on the one your main character is in, and <strong>All corporations</strong> shows them together; with one, there is no corporation picker. It is split into sections for an overview, players, when, where, kills and month by month, and the section open stays open when the period changes.</p>
+                    <p>Directors get a second tab on the Dashboard, for the tracked corporations their characters are in now. Admins get every tracked corporation. It loads when it is first opened, and has its own corporation and period pickers. With more than one corporation to choose from, it opens on the one your main character is in, and <strong>All corporations</strong> adds them together; with one, there is no corporation picker. Every figure and chart in it is for what the picker holds. It is split into sections for an overview, players, when, where, kills and month by month, and the section open stays open when the period changes.</p>
                     <ul>
                         <li><strong>ISK ratted</strong>: what the rats paid before tax. See How the Figures Work.</li>
                         <li><strong>Ratted in</strong>: how many systems, constellations and regions the period covers.</li>
@@ -827,7 +829,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                         <li><strong>Untracked ratters</strong>: characters the corporation journal pays bounties to who have no wallet token on SeAT.</li>
                         <li><strong>Wallet tokens lost</strong>: characters who had a token and lost it, with the last day it can come back and lose nothing. Shown only when there are any. See When a Token Is Lost.</li>
                         <li><strong>Gone quiet</strong>: regular ratters who have stopped.</li>
-                        <li>Each long list shows its first 10 rows; <strong>View all</strong> opens the whole of it, searchable and sortable, for the same corporation and period. The leaderboard's View all opens the Leaderboard page. Special spawns can be narrowed by NPC, faction, rank, size, player, character and system, and untracked ratters by corporation and whether they are on SeAT.</li>
+                        <li>Each long list shows its first 10 rows; <strong>View all</strong> opens the whole of it, searchable and sortable, for the same corporation and period. The leaderboard's View all opens the Leaderboard page. Special spawns can be narrowed by NPC, faction, rank, size, player, character and system, and untracked ratters by corporation and whether they are on SeAT. The dropdowns offer only what is in the list, so they change with the corporation and period picked.</li>
                         <li><strong>Insights</strong>: the same as on My Ratting for the whole corporation, plus the most players ratting in one hour, players per active day and income per player. The Systems table adds how many players ratted in each system and who ratted there most.</li>
                         <li><strong>Month by month</strong>: for the last 12 months, what the players earned, what landed in the corporation's wallet and the tax rate that makes, players, characters, hours, ISK per hour and income per player. Below the table, a chart of earned against taxed, and line charts of players and characters, hours, ISK per hour and income per player, each on its own scale. The month still running is dashed, since it is not over.</li>
                     </ul>
@@ -860,7 +862,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                     <h3><i class="fas fa-trophy"></i> Leaderboard</h3>
                     <p>Members see their corporation ranked by hours ratted, with active days, and their own row picked out. Nobody's ISK is shown to members, their own included; they find their own on My Ratting.</p>
                     <p>Directors see the full board: ISK ratted, income, hours, ISK per hour, the median comparison, rats, active days, change and coverage, for the tracked corporations their characters are in now. Admins see it for any tracked corporation or all of them.</p>
-                    <p>Everyone starts on their own corporation: the one their main character is in. Anyone with more than one corporation to choose from, members whose characters are in two tracked corporations included, gets a corporation picker; with one, there is none.</p>
+                    <p>Everyone starts on their own corporation: the one their main character is in. Anyone with more than one corporation to choose from, members whose characters are in two tracked corporations included, gets a corporation picker; with one, there is none. The ranking is only ever for what is picked, and corporations are only added together when you pick <strong>All corporations</strong>. Someone in none of the tracked corporations starts on the first of them.</p>
                     <h4>Players who have left</h4>
                     <p>
                         Ratting counts for the corporation a character was in at the time, so a player who leaves stays on the board for the periods they ratted.
@@ -887,10 +889,10 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
             <div id="ratter-lookup" class="help-section">
                 <div class="help-card">
                     <h3><i class="fas fa-search"></i> Ratter Lookup</h3>
-                    <p>For directors: every player who ratted for the corporations they may read in the last 90 days, with their characters, income, hours, ISK per hour, last tick, coverage and whether they have a wallet token. Search or sort it, and open a player.</p>
+                    <p>For directors: every player who ratted for the corporation picked in the last 90 days, with their characters, income, hours, ISK per hour, last tick, coverage and whether they have a wallet token. It opens on the one your main character is in, with a picker when you may read more than one. Search or sort it, and open a player.</p>
                     <h4>A player's page</h4>
                     <ul>
-                        <li>Their ratting as they see it on My Ratting, with the same period picker, including their <strong>rank by hours</strong> in their corporation.</li>
+                        <li>Their ratting as they see it on My Ratting, with the same period picker, for one corporation at a time, including their <strong>rank by hours</strong> in it. It opens on the corporation you came from, or otherwise the one their main character is in, with a picker when they belong to more than one you may read.</li>
                         <li><strong>Where the figures come from</strong>: for each character, the corporation it is in now, whether it has a wallet token, and its ticks in the last 90 days that were paired, seen only in the character's own journal, or seen only in the corporation journal.</li>
                         <li>A player who has left is marked, as on the leaderboard, and a character who has lost a wallet token says since when and the last day it can come back and lose nothing.</li>
                         <li>A director only sees what the player ratted for the corporations they may read, and cannot open a player who has nothing to do with them.</li>
@@ -964,7 +966,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                         <li><strong>Add a webhook</strong> under Settings, Webhooks: a name, the URL from Discord, whether it is for one corporation or all tracked corporations, and the notifications it carries. A webhook for one corporation only gets that corporation's posts. Its edit button changes any of these later. The URL is stored encrypted and never shown again; left empty when editing, it stays as it is.</li>
                         <li><strong>Set who gets mentioned</strong> under Settings, Notifications. Each notification has a switch, a default role, and a row per webhook with a tick and a role of its own.</li>
                         <li><strong>Check the Routing Map</strong>: where each notification goes now and who it mentions.</li>
-                        <li><strong>Send a sample</strong> of any notification to any webhook from Diagnostics, Notification Testing, to see it as it will look.</li>
+                        <li><strong>Test the webhook</strong> with the Test button on its row under Settings, Webhooks. A server admin can also send a sample of any notification to any webhook from Diagnostics, Notification Testing, to see it as it will look.</li>
                     </ol>
                     <h4>Who gets mentioned</h4>
                     <p>The role set on the webhook's own row comes first. Left blank, the notification's default role is used. <em>No ping</em> mentions nobody, even when a default is set. Only the role or user named is ever pinged; anything else typed in a role field is ignored. With SeAT Broadcast or SeAT Connector installed, roles can be picked by name.</p>
@@ -1199,7 +1201,8 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                             <tr><td><code>ratting-manager.view</code></td><td>This Help &amp; Documentation page. The Ratting Manager menu shows with this page alone.</td></tr>
                             <tr><td><code>ratting-manager.member</code></td><td>My Ratting, and the leaderboard with rank and hours.</td></tr>
                             <tr><td><code>ratting-manager.director</code></td><td>For the tracked corporations their characters are in now: the Corporation tab, the Monthly Report, the full leaderboard with everyone's ISK and its CSV downloads, and the Ratter Lookup.</td></tr>
-                            <tr><td><code>ratting-manager.admin</code></td><td>All of that for every tracked corporation, plus Settings and Diagnostics.</td></tr>
+                            <tr><td><code>ratting-manager.admin</code></td><td>All of that for every tracked corporation, plus Settings.</td></tr>
+                            <tr><td>SeAT server admin</td><td>Everything above, plus Diagnostics. This is the administrator setting on the user in SeAT itself, which no role or permission can give.</td></tr>
                         </tbody>
                     </table>
                     <p>This is checked on the server for every page and download, so a link cannot reach another corporation's figures. A director with no character in a tracked corporation gets the member pages. A role alone decides who gets in, unless <strong>Close the pages to people who have left</strong> is switched on under Settings.</p>
@@ -1291,7 +1294,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
             <div id="troubleshooting" class="help-section">
                 <div class="help-card">
                     <h3><i class="fas fa-wrench"></i> Troubleshooting Guide</h3>
-                    <p>The problems that come up most, and what to check. Most of the checks are on the Diagnostics page, which admins open from Settings.</p>
+                    <p>The problems that come up most, and what to check. Most of the checks are on the Diagnostics page, which only SeAT's server admins can open, so if that is not you, ask one of them.</p>
 
                     <h4>Common Issues</h4>
 
@@ -1357,14 +1360,21 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                 </div>
             </div>
 
-            {{-- Admin Diagnostics --}}
+            {{-- Admin Diagnostics, only for those who can open the page --}}
+            @if($isServerAdmin)
             <div id="admin-diagnostics" class="help-section">
                 <div class="help-card">
                     <h3><i class="fas fa-stethoscope"></i> Admin Diagnostics</h3>
-                    <p>Admins have a Diagnostics page for checking the plugin's health and testing notifications. Nothing on it changes the plugin's data; the one thing it sends is the sample posts from Notification Testing.</p>
+                    <p>Server admins have a Diagnostics page for checking the plugin's health and testing notifications. Nothing on it changes the plugin's data; the one thing it sends is the sample posts from Notification Testing.</p>
 
                     <h4>Where to find it</h4>
-                    <p>Settings has an <strong>Open Diagnostics</strong> button; the page is at <code>/ratting-manager/diagnostic</code>. It is not in the menu, and only admins can open it.</p>
+                    <p>Settings has an <strong>Open Diagnostics</strong> button; the page is at <code>/ratting-manager/diagnostic</code>. It is not in the menu, and only server admins can open it. The plugin's Admin permission is not enough.</p>
+                    <div class="quick-links" style="max-width: 220px;">
+                        <a href="{{ route('ratting-manager.diagnostic') }}" class="quick-link">
+                            <i class="fas fa-stethoscope"></i>
+                            {{ trans('ratting-manager::settings.open_diagnostics') }}
+                        </a>
+                    </div>
 
                     <h4>What each tab does</h4>
                     <table class="table table-sm">
@@ -1386,6 +1396,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                     </table>
                 </div>
             </div>
+            @endif
 
         </div>
     </div>

@@ -25,7 +25,7 @@
                 @forelse($shown as $u)
                     <tr data-filter-corporation="{{ $u['corporation'] ?? '?' }}" data-filter-on_seat="{{ $u['on_seat'] ? 'yes' : 'no' }}">
                         <td>
-                            <a href="{{ route('ratting-manager.ratters.show', $u['character_id']) }}">{{ $u['name'] }}</a>
+                            <a href="{{ route('ratting-manager.ratters.show', ['characterId' => $u['character_id']] + ($ratterQuery ?? [])) }}">{{ $u['name'] }}</a>
                             <br><small class="text-muted">{{ $u['corporation'] ?? trans('ratting-manager::dashboard.corporation_unknown') }} &middot; {{ $u['on_seat'] ? trans('ratting-manager::dashboard.on_seat') : trans('ratting-manager::dashboard.not_on_seat') }}</small>
                         </td>
                         <td class="text-right">{{ $u['ticks'] }}</td>

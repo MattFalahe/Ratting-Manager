@@ -227,6 +227,53 @@ class SourceTest extends TestCase
         }
     }
 
+    /** The plugin's admin permission must not reach Diagnostics, or be handed a link it cannot open. */
+    public function test_only_server_admins_reach_diagnostics_or_a_link_to_it(): void
+    {
+        $routes = file_get_contents(self::SRC . 'Http/routes.php');
+        $gate = strpos($routes, "'can:global.superuser'");
+        $this->assertNotFalse($gate, 'routes.php has no group for server admins');
+
+        preg_match_all("/'as' => 'ratting-manager\.diagnostic[a-z.-]*'/", $routes, $names, PREG_OFFSET_CAPTURE);
+        $this->assertNotEmpty($names[0]);
+        foreach ($names[0] as [$name, $at]) {
+            $this->assertGreaterThan($gate, $at, "$name sits before the group for server admins");
+        }
+
+        foreach (self::files('.blade.php') as $path) {
+            if (str_contains($path, '/views/diagnostic/')) {
+                continue;
+            }
+            $outside = preg_replace('/\B@if\(\$isServerAdmin\).*?\B@endif\b/s', '', file_get_contents($path));
+            $this->assertStringNotContainsString("route('ratting-manager.diagnostic", $outside, basename($path));
+            $this->assertStringNotContainsString('id="admin-diagnostics"', $outside, basename($path));
+        }
+    }
+
+    /**
+     * Every figure on a page is for what its picker holds. A scope built straight
+     * from everything tracked or readable adds corporations together without
+     * anybody having picked All.
+     */
+    public function test_no_controller_builds_a_scope_from_every_corporation(): void
+    {
+        foreach (self::files('.php', 'Http/Controllers') as $path) {
+            $this->assertDoesNotMatchRegularExpression(
+                '/new Scope\(\s*(\$configured|\$readable|\$(this->)?settings->configuredCorporations)/',
+                file_get_contents($path),
+                basename($path)
+            );
+        }
+    }
+
+    /** An address made by hand can send a list, and casting one to text is a 500. */
+    public function test_no_query_value_is_cast_to_text_directly(): void
+    {
+        foreach (self::files('.php') as $path) {
+            $this->assertStringNotContainsString('(string) $request->query(', file_get_contents($path), basename($path));
+        }
+    }
+
     public function test_user_facing_text_has_no_em_dashes(): void
     {
         $paths = array_merge([self::ROOT . 'README.md', self::ROOT . 'CHANGELOG.md'], self::files('.php', 'Resources/lang/en'), self::files('.blade.php'));

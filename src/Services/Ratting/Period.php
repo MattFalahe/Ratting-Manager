@@ -4,6 +4,7 @@ namespace RattingManager\Services\Ratting;
 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use RattingManager\Support\Query;
 
 /**
  * The stretch of time a page is showing, with the stretch before it of the
@@ -45,10 +46,10 @@ final class Period
      */
     public static function fromRequest(Request $request, ?Carbon $now = null): self
     {
-        $key = (string) $request->query('period', '');
+        $key = Query::text($request, 'period');
 
         if ($key === 'custom') {
-            $key = 'r-' . str_replace('-', '', (string) $request->query('from', '')) . '-' . str_replace('-', '', (string) $request->query('to', ''));
+            $key = 'r-' . str_replace('-', '', Query::text($request, 'from')) . '-' . str_replace('-', '', Query::text($request, 'to'));
         }
 
         return self::from($key, $now);

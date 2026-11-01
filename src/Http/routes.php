@@ -137,6 +137,11 @@ Route::group([
             'uses' => 'NotificationSettingsController@test',
         ])->where('webhook', '[0-9]+');
 
+    });
+
+    // Server admins only, as on Manager Core's page: the plugin's admin
+    // permission does not open it.
+    Route::group(['middleware' => 'can:global.superuser'], function () {
         // Every tab, the Master Test and the Tick Trace included, is a GET
         // and changes no data. The one POST sends a sample post to a webhook.
         Route::get('/diagnostic', [

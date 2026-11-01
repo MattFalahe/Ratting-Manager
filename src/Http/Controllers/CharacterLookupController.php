@@ -5,6 +5,7 @@ namespace RattingManager\Http\Controllers;
 use Illuminate\Http\Request;
 use RattingManager\Services\Character\AffiliationResolutionService;
 use RattingManager\Services\Character\Players;
+use RattingManager\Support\Query;
 use Seat\Web\Http\Controllers\Controller;
 
 /**
@@ -18,7 +19,7 @@ class CharacterLookupController extends Controller
         // Only characters a page showed this user. Answering for any ID would
         // tell a member whether someone rats for a tracked corporation.
         $shown = array_map('intval', (array) $request->session()->get(Players::SHOWN_PENDING, []));
-        $asked = array_map('intval', array_slice(explode(',', (string) $request->query('ids', '')), 0, 500));
+        $asked = array_map('intval', array_slice(explode(',', Query::text($request, 'ids')), 0, 500));
         $ids = array_values(array_intersect($asked, $shown));
 
         return response()->json(['pending' => $ids === [] ? [] : $resolver->stillPending($ids)]);

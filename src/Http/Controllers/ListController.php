@@ -33,7 +33,7 @@ class ListController extends Controller
     private const CORPORATION = ['systems', 'spawns', 'untracked', 'gone-quiet'];
 
     /** Lists whose rows depend on the period picked. */
-    private const BY_PERIOD = ['sessions', 'systems'];
+    private const BY_PERIOD = ['sessions', 'systems', 'spawns'];
 
     private ChartData $charts;
     private Insights $insights;
@@ -55,15 +55,22 @@ class ListController extends Controller
 
         $characters = $this->viewerCharacters($this->players);
         $picked = (int) $request->query('character', 0);
-        $scope = new Scope($this->settings->configuredCorporations(), in_array($picked, $characters, true) ? [$picked] : $characters);
+        [$corporations, $choices] = $this->ownCorporations($request, $this->players, $this->settings);
+        $scope = new Scope($corporations, in_array($picked, $characters, true) ? [$picked] : $characters);
         $this->players->load($characters);
 
         return $this->page($request, $list, $scope, [
             'heading' => trans('ratting-manager::dashboard.my_ratting'),
-            'back' => route('ratting-manager.dashboard', array_filter(['period' => $request->query('period'), 'character' => $picked ?: null])),
+            'back' => route('ratting-manager.dashboard', array_filter([
+                'period' => Period::fromRequest($request)->key,
+                'character' => $picked ?: null,
+                'corporation' => $this->corporationParam($corporations, $choices),
+            ])),
             'backLabel' => trans('ratting-manager::lists.back_my_ratting'),
             'characterOptions' => collect($characters)->mapWithKeys(fn ($id) => [$id => $this->players->name($id)])->sort()->all(),
             'pickedCharacter' => in_array($picked, $characters, true) ? $picked : null,
+            'corporations' => $this->corporationNames($choices),
+            'pickedCorporation' => count($corporations) === 1 ? $corporations[0] : null,
         ]);
     }
 
@@ -72,17 +79,24 @@ class ListController extends Controller
     {
         abort_unless(in_array($list, self::PERSONAL, true), 404);
 
-        $corporations = $this->readableCorporations($this->settings);
+        $readable = $this->readableCorporations($this->settings);
         $characters = $this->players->charactersOfPlayer($characterId);
-        $this->abortUnlessReadable($characters, $corporations);
+        $this->abortUnlessReadable($characters, $readable);
 
-        $scope = new Scope($corporations, $characters);
         $main = $this->players->mainOf($characterId);
+        [$corporations, $choices] = $this->ratterCorporations($request, $characters, $main, $readable);
+        $scope = new Scope($corporations, $characters);
 
         return $this->page($request, $list, $scope, [
             'heading' => trans('ratting-manager::ratter.title', ['name' => $this->players->name($main)]),
-            'back' => route('ratting-manager.ratters.show', array_filter(['characterId' => $characterId, 'period' => $request->query('period')])),
+            'back' => route('ratting-manager.ratters.show', array_filter([
+                'characterId' => $characterId,
+                'period' => Period::fromRequest($request)->key,
+                'corporation' => $this->corporationParam($corporations, $choices),
+            ])),
             'backLabel' => trans('ratting-manager::lists.back_ratter'),
+            'corporations' => $this->corporationNames($choices),
+            'pickedCorporation' => count($corporations) === 1 ? $corporations[0] : null,
         ]);
     }
 
@@ -91,8 +105,10 @@ class ListController extends Controller
     {
         abort_unless(in_array($list, self::CORPORATION, true), 404);
 
-        $corporations = $this->pickedCorporations($request, $this->settings);
+        $readable = $this->readableCorporations($this->settings);
+        $corporations = $this->pickFrom($readable, $request, $this->players);
         $scope = new Scope($corporations);
+        $param = $this->corporationParam($corporations, $readable);
 
         $rows = match ($list) {
             'untracked' => $metrics->untracked($corporations),
@@ -102,11 +118,12 @@ class ListController extends Controller
 
         return $this->page($request, $list, $scope, [
             'heading' => trans('ratting-manager::dashboard.corporation_ratting'),
-            'back' => route('ratting-manager.dashboard', array_filter(['period' => $request->query('period'), 'corporation' => $request->query('corporation')])) . '#rm-corporation',
+            'back' => route('ratting-manager.dashboard', array_filter(['period' => Period::fromRequest($request)->key, 'corporation' => $param])) . '#rm-corporation',
             'backLabel' => trans('ratting-manager::lists.back_corporation'),
             'corporations' => $this->corporationNames(),
             'pickedCorporation' => count($corporations) === 1 ? $corporations[0] : null,
             'corporation' => true,
+            'ratterQuery' => array_filter(['corporation' => $param]),
             'rows' => $rows,
         ]);
     }
@@ -119,7 +136,7 @@ class ListController extends Controller
         $rows = $view['rows'] ?? match ($list) {
             'sessions' => $this->charts->sessions($scope, $period, self::MAX_ROWS)['list'],
             'systems' => $this->insights->for($scope, $period, $corporation)['systems'],
-            'spawns' => $this->charts->spawns($scope, self::MAX_ROWS),
+            'spawns' => $this->charts->spawns($scope, $period, self::MAX_ROWS),
         };
 
         return view('ratting-manager::lists.index', array_merge($view, [
