@@ -117,6 +117,9 @@ class WalletGaps
             // A token that went is news while its days can still come back,
             // or while its character is still ratting. One that looks fine is
             // only lost if the corporation is seeing ticks its journal is not.
+            // A live token gets LAG_HOURS for that: SeAT pulls each journal on
+            // its own clock, so someone back after a break is in the
+            // corporation's journal a while before their own catches up.
             $start = $ticks->isEmpty() ? null : Carbon::parse($ticks->first()->ticked_at);
             if ($state === 'removed') {
                 $removed = Carbon::parse($row->deleted_at);
@@ -125,6 +128,8 @@ class WalletGaps
                     continue;
                 }
             } elseif ($start === null) {
+                continue;
+            } elseif ($state === 'live' && $start->gt(now()->subHours(self::LAG_HOURS))) {
                 continue;
             }
 
