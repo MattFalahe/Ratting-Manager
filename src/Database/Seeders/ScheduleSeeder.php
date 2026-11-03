@@ -95,8 +95,8 @@ class ScheduleSeeder extends AbstractScheduleSeeder
                 'ping_before' => null,
                 'ping_after' => null,
             ],
-            // After the nightly 31-day read. Does nothing unless Keep raw
-            // ticks is set.
+            // After the nightly 31-day read. Raw rows go once they are older
+            // than Keep raw ticks, everything else once no page shows it.
             [
                 'command' => 'ratting-manager:drop-old-ticks',
                 'expression' => '55 4 * * *',

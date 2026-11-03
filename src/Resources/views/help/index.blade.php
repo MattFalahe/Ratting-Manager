@@ -490,11 +490,6 @@
                         <i class="fas fa-envelope"></i> <a href="mailto:mattfalahe@gmail.com" style="color: #667eea;">mattfalahe@gmail.com</a>
                     </p>
 
-                    <div class="info-box">
-                        <i class="fas fa-box-open"></i>
-                        <div>Ratting Manager 1.0 is in preparation: there is no tagged release on Packagist yet.</div>
-                    </div>
-
                     <div class="quick-links" style="margin-top: 15px;">
                         <a href="https://github.com/MattFalahe/Ratting-Manager" class="quick-link" target="_blank" rel="noopener" style="padding: 10px;">
                             <i class="fab fa-github" style="font-size: 1rem; margin-bottom: 4px;"></i>
@@ -1001,7 +996,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                         <li><strong>Session gap</strong>: how long a pause ends a session. The default of {{ $sessionGap }} minutes lets one missed tick pass.</li>
                         <li><strong>Gone quiet after</strong> and <strong>Regular ratter window</strong>: who is listed under Gone quiet.</li>
                         <li><strong>Leaderboard size for members</strong>: how many places members see.</li>
-                        <li><strong>Keep raw ticks for</strong>: 0 keeps them for the 365 days the pages can show. From 45 days up, ticks, kill rows, ESS payouts and daily kill totals older than this are deleted nightly once the summaries hold their days. Every page and report keeps its figures, but those days can only be imported again with <code>ratting-manager:restore-ticks</code>. See Data and ESI.</li>
+                        <li><strong>Keep raw ticks for</strong>: ticks, kill rows, ESS payouts and daily kill totals older than this are deleted nightly once the summaries hold their days. 60 days by default and 45 at the least; 0 keeps them for the 365 days the pages can show. Every page and report keeps its figures, but those days can only be imported again with <code>ratting-manager:restore-ticks</code>. See Data and ESI.</li>
                         <li><strong>Close the pages to people who have left</strong>: when on, the member and director pages also need a character in a tracked corporation now, so a player who leaves loses them. Off by default. Help stays open, and admins are never closed out.</li>
                         <li><strong>Extra NPC type IDs</strong>: rats to list as special spawns on top of officers, commanders, clone soldiers and capital rats.</li>
                         <li><strong>Home space</strong>, on the Outsiders alert under Notifications: the regions, constellations and systems the alert watches, by name or ID. Until one is set the alert sends nothing and carries a warning badge.</li>
@@ -1014,7 +1009,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
             <div id="commands" class="help-section">
                 <div class="help-card">
                     <h3><i class="fas fa-terminal"></i> CLI Commands</h3>
-                    <p>Run them inside SeAT's front container, for example <code>docker exec -it seat-docker-front-1 php artisan ratting-manager:process</code>. Every command that writes takes the same lock, so a manual run never overlaps the scheduled one.</p>
+                    <p>Run them inside SeAT's front container, for example <code>docker exec -it seat-docker-front-1 php artisan ratting-manager:process</code>. The commands that import, rebuild or drop ratting data share one lock, and <code>notify</code>, <code>send-reports</code>, <code>resolve-characters</code> and <code>track-departures</code> each have one of their own. A run that finds its lock taken says so and stops, instead of working on the same rows.</p>
 
                     <h4><i class="fas fa-clock text-primary"></i> On the Schedule</h4>
                     <p>These run by themselves. The schedules are added once, and changes you make to them in SeAT are kept on update. You can also run any of them by hand. Times are EVE time.</p>
@@ -1089,7 +1084,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
 
                     <h4 class="mt-4"><i class="fas fa-magic text-success"></i> First Import</h4>
                     <p><code>docker exec -it seat-docker-front-1 php artisan ratting-manager:initialize</code></p>
-                    <p>Run once, after picking the corporations. It checks the setup, imports the last 365 days of bounty ticks and ESS payouts SeAT already holds, the most any page shows, and builds every session, daily summary, character day and monthly summary from them, with a progress bar for each step. Without it, the schedule brings in the last 31 days within a day.</p>
+                    <p>Run once, after picking the corporations. It checks the setup, imports the last 365 days of bounty ticks and ESS payouts SeAT already holds, the most any page shows, and builds every session, daily summary, character day and monthly summary from them, with a progress bar for each step. Without it, the schedule brings in the last 31 days within a day. Once raw ticks have been dropped, it starts at the oldest day still kept, and <code>ratting-manager:restore-ticks</code> brings the days before it back.</p>
                     <p><small class="text-muted">Options: <code>--from=YYYY-MM-DD</code> start later</small></p>
 
                     <h4 class="mt-4"><i class="fas fa-wrench text-info"></i> Run by Hand</h4>
@@ -1170,7 +1165,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                     <h4>What is kept, and for how long</h4>
                     <table class="table table-sm">
                         <tbody>
-                            <tr><td><strong>Ticks, kill rows, ESS payouts, daily kill totals</strong></td><td>Keep raw ticks under Settings, 45 days at the least, once the summaries hold their days. At 0, the 365 days below.</td></tr>
+                            <tr><td><strong>Ticks, kill rows, ESS payouts, daily kill totals</strong></td><td>Keep raw ticks under Settings, once the summaries hold their days: 60 days by default, 45 at the least. At 0, the 365 days below.</td></tr>
                             <tr><td><strong>Daily summaries, character days, sessions, special spawns, tax rates, departures</strong></td><td>365 days. No page shows further back.</td></tr>
                             <tr><td><strong>Monthly summaries</strong></td><td>25 months, so the last 12 can be compared with the 12 before them.</td></tr>
                         </tbody>
@@ -1267,7 +1262,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                         'What does the Ex-member tag mean?' => 'None of the player\'s characters is in the corporations shown now, and it gives the day they left. Ratting counts for the corporation a character was in at the time, so they stay on the boards for the periods they ratted; the tag says why someone you no longer see in the corporation is listed.',
                         'What does Not authed with SeAT mean?' => 'SeAT holds no live token for any of the player\'s characters: they were never added, or have lost every token. Hover the badge to see which. They still count, from the corporation journal, and are watched for leaving like anyone else.',
                         'Someone left just after a tick. Is it lost?' => 'No. The tick\'s row carries the time it paid and names them, so it counts for the corporation that took the cut, even when it lands after they have gone.',
-                        'How long is everything kept?' => 'See Data and ESI. Raw rows for as long as Keep raw ticks says, the daily summaries behind the charts for 365 days, and monthly totals for 25 months.',
+                        'How long is everything kept?' => 'See Data and ESI. Raw rows for as long as Keep raw ticks says, 60 days by default, the daily summaries behind the charts for 365 days, and monthly totals for 25 months.',
                         'What is the difference between ISK ratted and income?' => 'Income is what the pilots received. ISK ratted is what the rats paid before tax, so income plus the corporation\'s cut.',
                         'A member lost their token. Have we lost their ratting?' => 'Not if it comes back within 30 days: SeAT brings the journal back and the next import fills it in. See When a Token Is Lost.',
                         'Why can I not see another corporation as a director?' => 'Directors read the tracked corporations their characters are in now. Admins read all of them.',
@@ -1320,7 +1315,7 @@ docker compose -f docker-compose.yml -f docker-compose.mariadb.yml -f docker-com
                     <h5>A ratter stays as Character info in progress</h5>
                     <p>SeAT does not know them and the background lookup has not answered yet.</p>
                     <ul>
-                        <li>Diagnostics, Health Checks shows whether the lookup schedules are running.</li>
+                        <li>Diagnostics, Health Checks shows how many are waiting, and warns when one has waited more than five minutes, which means the lookup that runs every minute is not running.</li>
                         <li>The lookup stops calling ESI while the error budget it shares with SeAT is low, and falls back to EVEWho and zKillboard.</li>
                         <li><code>ratting-manager:resolve-characters --stats</code> shows what the lookup holds and what is waiting.</li>
                     </ul>

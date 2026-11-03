@@ -53,11 +53,12 @@
         <h3 class="card-title"><i class="fas fa-sliders-h"></i> {{ trans('ratting-manager::settings.data') }}</h3>
     </div>
     <div class="card-body">
-        {{-- The line stays after the setting goes back to 0, so this one follows the line, not the setting. --}}
+        {{-- The line stays after the setting goes back to 0, so this one follows the line, not the setting.
+             Info rather than a warning, since dropping raw rows is what a server does by default. --}}
         @if($rawKeptFrom)
-            <div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> {{ trans('ratting-manager::settings.raw_ticks_dropped', ['date' => $rawKeptFrom->toDateString()]) }}</div>
+            <div class="alert alert-info"><i class="fas fa-info-circle"></i> {{ trans('ratting-manager::settings.raw_ticks_dropped', ['date' => $rawKeptFrom->toDateString()]) }}</div>
         @elseif((int) $values['raw_tick_days'] > 0)
-            <div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> {{ trans('ratting-manager::settings.raw_ticks_on', ['days' => $values['raw_tick_days']]) }}</div>
+            <div class="alert alert-info"><i class="fas fa-info-circle"></i> {{ trans('ratting-manager::settings.raw_ticks_on', ['days' => $values['raw_tick_days']]) }}</div>
         @endif
         <div class="row">
             @foreach([

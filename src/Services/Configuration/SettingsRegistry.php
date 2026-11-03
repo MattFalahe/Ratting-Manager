@@ -30,10 +30,12 @@ final class SettingsRegistry
         'data.gone_quiet_days' => [self::INSTALL, 'int', 14],
         'data.regular_ratter_days' => [self::INSTALL, 'int', 90],
         // How long ticks, kill rows, ESS payouts and daily kill totals are kept
-        // once the summaries hold their days. 0 keeps them for the year the
-        // pages can show: going below that takes away rebuilding those days,
-        // so an operator has to choose it.
-        'data.raw_tick_days' => [self::INSTALL, 'int', 0],
+        // once the summaries hold their days. The summaries hold every figure,
+        // and the kill rows would otherwise pile up for the whole year. Two
+        // months is past the 30 days a returning wallet token reaches back,
+        // with room left to rebuild or trace recent days. 0 keeps them for the
+        // year the pages can show.
+        'data.raw_tick_days' => [self::INSTALL, 'int', 60],
 
         // Close the ratting pages to anyone with none of their characters in a
         // tracked corporation now. Off by default: a role alone decides until

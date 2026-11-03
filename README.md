@@ -1,11 +1,10 @@
 # Ratting Manager for SeAT
 
+[![Latest Version](https://img.shields.io/packagist/v/mattfalahe/ratting-manager.svg?style=flat-square)](https://packagist.org/packages/mattfalahe/ratting-manager)
 [![License](https://img.shields.io/badge/license-GPL--2.0-blue.svg?style=flat-square)](LICENSE)
 [![SeAT](https://img.shields.io/badge/SeAT-5.x-blue.svg?style=flat-square)](https://github.com/eveseat/seat)
 
 A ratting plugin for SeAT 5.x. It tracks one thing: who rats, where, when, how much they earn and what they kill. Every member sees their own ratting, and directors see the same for the whole corporation.
-
-Ratting Manager 1.0 is in preparation.
 
 Release history lives in the [CHANGELOG](CHANGELOG.md).
 
@@ -191,7 +190,7 @@ It stops calling ESI while the error budget it shares with SeAT is low, and EVEW
 
 | What | Kept for |
 |---|---|
-| Ticks, kill rows, ESS payouts, daily kill totals | Keep raw ticks under Settings, 45 days at the least, once the summaries hold their days. At 0, the 365 days below. |
+| Ticks, kill rows, ESS payouts, daily kill totals | Keep raw ticks under Settings, once the summaries hold their days: 60 days by default, 45 at the least. At 0, the 365 days below. |
 | Daily summaries, character days, sessions, special spawns, tax rates, departures | 365 days. No page shows further back. |
 | Monthly summaries | 25 months, so the last 12 can be compared with the 12 before them. |
 
@@ -225,7 +224,7 @@ A director with no character in a tracked corporation gets the member pages. **C
 
 ## Artisan Commands
 
-Run them inside SeAT's front container, for example `docker exec -it seat-docker-front-1 php artisan ratting-manager:process`. Every command that writes takes the same lock, so a manual run never overlaps the scheduled one.
+Run them inside SeAT's front container, for example `docker exec -it seat-docker-front-1 php artisan ratting-manager:process`. The commands that import, rebuild or drop ratting data share one lock, and `notify`, `send-reports`, `resolve-characters` and `track-departures` each have one of their own. A run that finds its lock taken says so and stops, instead of working on the same rows.
 
 ### On the schedule
 
@@ -247,7 +246,7 @@ The schedules are added once, and changes you make to them in SeAT are kept on u
 
 | Command | When you would | What it does | Options |
 |---|---|---|---|
-| `ratting-manager:initialize` | Once, after picking the corporations | Checks the setup and imports the last 365 days of bounty ticks and ESS payouts SeAT already holds, the most any page shows, with a progress bar per step, and builds every session, daily summary, character day and monthly summary from them. | `--from=YYYY-MM-DD` start later |
+| `ratting-manager:initialize` | Once, after picking the corporations | Checks the setup and imports the last 365 days of bounty ticks and ESS payouts SeAT already holds, the most any page shows, with a progress bar per step, and builds every session, daily summary, character day and monthly summary from them. Once raw ticks have been dropped, it starts at the oldest day still kept, and `restore-ticks` brings the days before it back. | `--from=YYYY-MM-DD` start later |
 | `ratting-manager:restore-ticks --from=YYYY-MM-DD` | To bring dropped days back | Imports them again from SeAT's journals, up to a year back. Always shows what would change first and asks you to type a confirmation, and stops without changing anything if a day would lose ticks or income. | `--from=` required, how far back. `--dry-run` stop after showing it |
 | `ratting-manager:trace-tick {journal_id}` | To see why a tick looks wrong | Shows what the plugin did with one journal row, the same as the Tick Trace tab. | `journal_id` the id of a bounty or ESS row in either journal |
 | `ratting-manager:update-daily-summaries` | After a Data Integrity warning names a day | Rebuilds the daily summaries, and the character days and monthly summaries built with them. | `--days=2`, `--from=YYYY-MM-DD` |
