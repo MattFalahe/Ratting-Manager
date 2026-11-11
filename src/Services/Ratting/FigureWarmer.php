@@ -1,0 +1,77 @@
+<?php
+
+namespace RattingManager\Services\Ratting;
+
+use RattingManager\Http\Controllers\ListController;
+use RattingManager\Http\Controllers\RatterController;
+use RattingManager\Services\Configuration\Settings;
+use Throwable;
+
+/**
+ * Works out the figures the Corporation tab, the Leaderboard and the Ratter
+ * Lookup open with right after an import, so the first director to open them
+ * does not wait for the month's ticks to be read.
+ */
+class FigureWarmer
+{
+    private Settings $settings;
+    private RattingMetrics $metrics;
+    private Insights $insights;
+    private MonthlyBreakdown $monthly;
+    private ChartData $charts;
+
+    public function __construct(Settings $settings, RattingMetrics $metrics, Insights $insights, MonthlyBreakdown $monthly, ChartData $charts)
+    {
+        $this->settings = $settings;
+        $this->metrics = $metrics;
+        $this->insights = $insights;
+        $this->monthly = $monthly;
+        $this->charts = $charts;
+    }
+
+    public function warm(): void
+    {
+        $failed = null;
+
+        // One at a time, as the pickers open on one corporation and All is only
+        // worked out when someone picks it. One that cannot be read leaves the rest.
+        foreach ($this->settings->configuredCorporations() as $corporation) {
+            try {
+                $this->warmCorporation($corporation);
+            } catch (Throwable $e) {
+                $failed ??= $e;
+            }
+        }
+
+        if ($failed !== null) {
+            throw $failed;
+        }
+    }
+
+    private function warmCorporation(int $corporation): void
+    {
+        $corporations = [$corporation];
+        $scope = new Scope($corporations);
+        $period = Period::from(null);
+
+        $this->metrics->collect($scope, $period->start, $period->end);
+        $this->insights->for($scope, $period, true);
+        $this->monthly->corporationMonths($scope);
+
+        // The rest of what the Corporation tab opens with, read the same way
+        // DashboardController::corporationTab() reads it.
+        $this->metrics->goneQuiet($corporations);
+        $this->metrics->untracked($corporations);
+        $this->charts->systems($scope, $period);
+        $this->charts->spaceCounts($scope, $period);
+        $this->charts->kills($scope, $period);
+        $this->charts->spawns($scope, $period, ListController::DASHBOARD_ROWS);
+        $this->charts->spawnCount($scope, $period);
+        $this->charts->monthly($scope, true);
+        $this->charts->daily($scope, $period);
+        $this->charts->ratterMovement($scope);
+
+        // The Ratter Lookup's list.
+        $this->metrics->collect($scope, now()->subDays(RatterController::LOOKUP_DAYS - 1)->startOfDay(), now());
+    }
+}
