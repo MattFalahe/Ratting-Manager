@@ -1,0 +1,9 @@
+{
+    "plugin": "ratting-manager",
+    "manager_core": { "relation": "optional", "minimum": "1.1.0" },
+    "migration_identifier": "ratting_manager",
+    "publishes": [],
+    "subscribes": [],
+    "capabilities": { "provides": [], "calls": [] },
+    "routes": { "serves": [], "uses": [] }
+}
